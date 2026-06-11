@@ -29,7 +29,6 @@ PlanChoices = [
 class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile', blank=True, null=True)
     full_name = models.CharField(max_length=255, blank=True, null=True)
-    email = models.EmailField(unique=True, blank=True, null=True)
     backup_email = models.EmailField(blank=True, null=True)
     phone_number = models.CharField(max_length=20, blank=True, null=True)
     profile_picture = models.ImageField(upload_to='media/', blank=True, null=True)
