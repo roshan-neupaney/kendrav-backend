@@ -1,6 +1,5 @@
 from rest_framework import serializers
 from django.contrib.auth.models import User
-from users.models import Profile
 
 class RegistrationSerializer(serializers.ModelSerializer):
     full_name = serializers.CharField(write_only=True, required=False)
@@ -24,16 +23,6 @@ class RegistrationSerializer(serializers.ModelSerializer):
         
         return user
 
-class LoginSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = User
-        fields = ['email', 'password']
-        extra_kwargs = {'password': {'write_only': True}}
-
-    def get(self, validated_data):
-        email = validated_data.get('email')
-        password = validated_data.get('password')
-        user = User.objects.filter(email=email).first()
-        if user and user.check_password(password):
-            return user
-        raise serializers.ValidationError("Invalid email or password")
+class LoginSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    password = serializers.CharField()
