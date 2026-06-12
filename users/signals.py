@@ -7,4 +7,4 @@ from .models import Profile, Preferences
 def create_user_profile(sender, instance, created, **kwargs):
     if created:
         Profile.objects.create(user=instance)
-        Preferences.objects.create(profile=profile)
+        Preferences.objects.create(profile=instance.profile)
