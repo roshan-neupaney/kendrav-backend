@@ -23,7 +23,7 @@ class RegistrationSerializer(serializers.ModelSerializer):
                 email = validated_data['email'],
                 password = validated_data['password']
             )
-        except Exception as e:
+        except Exception:
             raise serializers.ValidationError("Error creating user")
         if hasattr(user, 'profile'):
             user.profile.full_name = full_name
