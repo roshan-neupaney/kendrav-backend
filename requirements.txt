@@ -6,6 +6,7 @@ cryptography==49.0.0
 dj-rest-auth==7.2.0
 Django==6.0.6
 django-allauth==65.18.0
+django-cors-headers==4.9.0
 django-environ==0.13.0
 djangorestframework==3.17.1
 djangorestframework_simplejwt==5.5.1

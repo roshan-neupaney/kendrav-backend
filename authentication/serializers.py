@@ -32,23 +32,23 @@ class RegistrationSerializer(serializers.ModelSerializer):
         return user
 
 class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
+    username_field = 'email'
     def validate(self, attrs):
-        username = attrs.get('username')
+        email = attrs.get('email')
         password = attrs.get('password')
 
         try:
-            user = User.objects.get(username=username)
+            user = User.objects.get(email=email)
         except User.DoesNotExist:
             raise serializers.ValidationError('Invalid Email')
         
         if not user.check_password(password):
             raise serializers.ValidationError('Incorrect Password')
         
+        attrs[self.username_field] = user.username
         data = super().validate(attrs)
-        access_token = data.pop('access')
-        refresh_token = data.pop('refresh')
 
-        data['access_token'] = access_token
-        data['refresh_token'] = refresh_token
+        data['access_token'] = data.pop('access')
+        data['refresh_token'] = data.pop('refresh')
 
         return data

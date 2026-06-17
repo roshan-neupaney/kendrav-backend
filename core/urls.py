@@ -20,5 +20,7 @@ from django.urls import path, include
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/auth/', include('authentication.urls')),
+    path('api/auth/', include('dj_rest_auth.urls')),        # ADD — logout, user, token refresh
+    path('api/auth/registration/', include('dj_rest_auth.registration.urls')),  # ADD
     path('accounts/', include('allauth.urls')),
 ]

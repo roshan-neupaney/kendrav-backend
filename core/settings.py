@@ -20,6 +20,9 @@ ALLOWED_HOSTS = []
 
 SITE_ID = 1
 
+CORS_ALLOWED_ORIGINS = ["http://localhost:5173"]
+CORS_ALLOW_CREDENTIALS = True
+
 INSTALLED_APPS = [
     "django.contrib.admin",
     "django.contrib.auth",
@@ -37,8 +40,9 @@ INSTALLED_APPS = [
     "allauth.account",
     "allauth.socialaccount",
     "allauth.socialaccount.providers.google",
-    'dj_rest_auth',
-    'dj_rest_auth.registration',
+    "dj_rest_auth",
+    "dj_rest_auth.registration",
+    "corsheaders",
 ]
 
 REST_FRAMEWORK = {
@@ -53,6 +57,13 @@ REST_FRAMEWORK = {
     "EXCEPTION_HANDLER": "authentication.exceptions.custom_exception_handler",
 }
 
+REST_AUTH = {
+    "USE_JWT": True,
+    "JWT_AUTH_COOKIE": "access-token",
+    "JWT_AUTH_REFRESH_COOKIE": "refresh-token",
+    "JWT_AUTH_HTTPONLY": True,
+}
+
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=60),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
@@ -60,6 +71,11 @@ SIMPLE_JWT = {
     "BLACKLIST_AFTER_ROTATION": True,
     "AUTH_HEADER_TYPES": ("Bearer",),
 }
+
+AUTHENTICATION_BACKENDS = [
+    'authentication.backends.EmailBackend',
+    'allauth.account.auth_backends.AuthenticationBackend',
+]
 
 SOCIALACCOUNT_PROVIDERS = {
     "google": {
@@ -85,12 +101,13 @@ ACCOUNT_SIGNUP_FIELDS = ["email"]
 ACCOUNT_LOGIN_METHODS = {"email"}
 ACCOUNT_EMAIL_VERIFICATION = "none"
 
-SOCIALACCOUNT_ADAPTER = 'authentication.adapters.CustomSocialAccountAdapter'
+SOCIALACCOUNT_ADAPTER = "authentication.adapters.CustomSocialAccountAdapter"
 
 LOGIN_REDIRECT_URL = "/"
 LOGOUT_REDIRECT_URL = "/"
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',   # ← This is still correct in most versions,
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
