@@ -28,6 +28,6 @@ class LoginView(TokenObtainPairView):
 class GoogleLoginView(SocialLoginView):
     adapter_class = GoogleOAuth2Adapter
     client_class = OAuth2Client
-    callback_url = 'http://localhost:5173/login/google/callback/'
+    callback_url = 'http://localhost:5173/login/google/callback'
     authentication_classes = []   # ADD — view must be publicly accessible
     permission_classes = []  

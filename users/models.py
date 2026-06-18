@@ -52,4 +52,4 @@ class Preferences(models.Model):
 
 
     def __str__(self):
-        return self.user.username
+        return self.profile.user.username

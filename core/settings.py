@@ -91,7 +91,6 @@ SOCIALACCOUNT_PROVIDERS = {
         "AUTH_PARAMS": {
             "access_type": "online",
         },
-        "OAUTH_PKCE_ENABLED": True,  # Enhances OAuth security
     }
 }
 
