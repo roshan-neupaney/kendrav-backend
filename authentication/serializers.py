@@ -1,4 +1,4 @@
-from rest_framework import serializers
+from rest_framework import serializers, status
 from django.contrib.auth.models import User
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
@@ -51,4 +51,8 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
         data['access_token'] = data.pop('access')
         data['refresh_token'] = data.pop('refresh')
 
-        return data
+        return {
+            "message": 'Login Successfull',
+            "data" : data,
+            "status": status.HTTP_200_OK
+        }
