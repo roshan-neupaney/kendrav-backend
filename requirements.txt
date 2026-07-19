@@ -2,6 +2,7 @@ asgiref==3.11.1
 certifi==2026.5.20
 cffi==2.0.0
 charset-normalizer==3.4.7
+click==8.4.2
 cryptography==49.0.0
 dj-rest-auth==7.2.0
 Django==6.0.6
@@ -10,7 +11,9 @@ django-cors-headers==4.9.0
 django-environ==0.13.0
 djangorestframework==3.17.1
 djangorestframework_simplejwt==5.5.1
+h11==0.16.0
 idna==3.18
+packaging==26.2
 pillow==12.2.0
 psycopg2-binary==2.9.12
 pycparser==3.0
