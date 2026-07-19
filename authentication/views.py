@@ -6,9 +6,11 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 from allauth.socialaccount.providers.google.views import GoogleOAuth2Adapter
 from dj_rest_auth.registration.views import SocialLoginView
 from allauth.socialaccount.providers.oauth2.client import OAuth2Client
+from rest_framework.permissions import AllowAny
 
 
 class RegistrationView(APIView):
+    permission_classes = [AllowAny]
     def post(self, request):
         serializer = RegistrationSerializer(data=request.data)
         if serializer.is_valid(raise_exception=True):
@@ -23,11 +25,12 @@ class RegistrationView(APIView):
 
 
 class LoginView(TokenObtainPairView):
+    permission_classes = [AllowAny]
     serializer_class = MyTokenObtainPairSerializer
 
 class GoogleLoginView(SocialLoginView):
+    permission_classes = [AllowAny]
     adapter_class = GoogleOAuth2Adapter
     client_class = OAuth2Client
     callback_url = 'http://localhost:5173/login/google/callback'
     authentication_classes = []   # ADD — view must be publicly accessible
-    permission_classes = []  
