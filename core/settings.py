@@ -154,7 +154,7 @@ WSGI_APPLICATION = "core.wsgi.application"
 # }
 
 DATABASES = {
-    'default': env.db('DATABASE_URL', default=f'postgresql://{env("DATABASE_USER")}:{env("DATABASE_PASSWORD")}@{env("DATABASE_HOST")}:{env("DATABASE_PORT")}/{env("DATABASE_NAME")}')
+    'default': env.db('DATABASE_URL')
 }
 
 
