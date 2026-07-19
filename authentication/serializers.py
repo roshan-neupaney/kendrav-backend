@@ -1,4 +1,4 @@
-from rest_framework import serializers
+from rest_framework import serializers, status
 from django.contrib.auth.models import User
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
@@ -23,7 +23,7 @@ class RegistrationSerializer(serializers.ModelSerializer):
                 email = validated_data['email'],
                 password = validated_data['password']
             )
-        except Exception as e:
+        except Exception:
             raise serializers.ValidationError("Error creating user")
         if hasattr(user, 'profile'):
             user.profile.full_name = full_name
@@ -32,23 +32,27 @@ class RegistrationSerializer(serializers.ModelSerializer):
         return user
 
 class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
+    username_field = 'email'
     def validate(self, attrs):
-        username = attrs.get('username')
+        email = attrs.get('email')
         password = attrs.get('password')
 
         try:
-            user = User.objects.get(username=username)
+            user = User.objects.get(email=email)
         except User.DoesNotExist:
             raise serializers.ValidationError('Invalid Email')
         
         if not user.check_password(password):
             raise serializers.ValidationError('Incorrect Password')
         
+        attrs[self.username_field] = user.username
         data = super().validate(attrs)
-        access_token = data.pop('access')
-        refresh_token = data.pop('refresh')
 
-        data['access_token'] = access_token
-        data['refresh_token'] = refresh_token
+        data['access_token'] = data.pop('access')
+        data['refresh_token'] = data.pop('refresh')
 
-        return data
+        return {
+            "message": 'Login Successfull',
+            "data" : data,
+            "status": status.HTTP_200_OK
+        }

@@ -3,8 +3,9 @@ from django.contrib.auth.models import User
 from django.dispatch import receiver
 from .models import Profile, Preferences
 
+
 @receiver(post_save, sender=User)
 def create_user_profile(sender, instance, created, **kwargs):
     if created:
         Profile.objects.create(user=instance)
-        Preferences.objects.create(profile=instance.profile)
+        Preferences.objects.create(user=instance)
