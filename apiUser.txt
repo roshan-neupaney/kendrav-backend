@@ -1,0 +1,172 @@
+Method   → GET
+Endpoint → /api/v1/user/me/
+Auth     → private
+Response → {
+    status: number,
+    message: string,
+    data: {
+        id: string;
+        email: string;
+        username: string;
+        workspaces: [{
+            id: string;
+            title: string;
+            slug_url: string;
+            owner_id: string;
+            type: 'personal' | 'team'
+            created_at: string;
+            updated_at: string;
+        }],
+        profile: {
+            id: number;
+            full_name: string;
+            phone_number: string;
+            profile_picture: string;
+            backup_email: string;
+            two_factor_enabled: boolean;
+            user_id: number;
+            is_active boolean
+        },
+        preferences: {
+            id: number
+            user_id: number
+            theme: 'system' | 'dark' | 'light'
+            time_format: '12h' | '24h'
+            timezone: string
+            start_of_week: 'sunday' | 'monday' | 'tuesday' | 'thursday' | 'friday' | 'saturday'
+            default_posting_option: 'next-available' | 'now' | 'set_date_time' | 'draft'
+        },
+        user_subscriptions: {
+            id: number
+            start_date: string
+            end_date: string
+            user_id: number
+            subscription_id: number
+            payment_history_id: number
+            subscriptions: {
+                id: number
+                plan_name: string
+                plan_type: 'basic' | 'pro' | 'enterprise'
+                max_channels: number
+                queue_limit: number
+                allow_analytics: boolean
+                allow_team: boolean
+                templates: 'basic' | 'full'
+                comment_and_reply: boolean
+                activity_log: boolean
+                custom_time_slots: boolean
+                ai_generative_caption: boolean
+                max_ai_generative_caption: number
+                ai_generative_hastags: boolean
+                max_ai_generative_hastags: number
+                ai_generative_idea: boolean
+                max_ai_generative_idea: number
+                max_workspaces: number
+                price: number
+                duration_days: number
+                created_at: string
+                updated_at: string
+                }
+            is_active: boolean
+            created_at: string
+            updated_at: string
+        },
+        user_notification_preferences: { //grouped by notification_type from backend
+            post_published : boolean
+            post_failed: boolean
+            .
+            .
+            .
+            .
+            new_comment: boolean
+        }
+    }
+}
+
+Method   → PATCH
+Endpoint → /api/v1/user/profile/
+Auth     → private
+Payload  → {
+    full_name?: string;
+    phone_number?: string;
+    backup_email?: string;
+    profile_picture?: string;
+    two_factor_enabled?: boolean;
+}
+Response → {
+    status: number,
+    message: string,
+    data: {
+        id: number;
+        full_name: string;
+        phone_number: string;
+        backup_email: string;
+        profile_picture: string;
+        two_factor_enabled: boolean;
+    }
+}
+
+Method   → POST
+Endpoint → /api/v1/user/profile-picture/
+Auth     → private
+Payload  → {
+    file_name: string; //optional
+}
+Response → {
+    status: number,
+    message: string,
+    data: {
+        signature: string;
+        api_key: string;
+        timestamp: string;
+        folder: string;
+        cloud_name: string;
+    }
+}
+
+Method   → PATCH
+Endpoint → /api/v1/user/preferences/
+Auth     → private
+Payload  → {
+    theme?: string;
+    time_format?: string;
+    timezone?: string;
+    start_of_week?: string;
+    default_posting_option?: 'next-available' | 'now' | 'set_date_time' | 'draft';
+}
+Response → {
+    status: number,
+    message: string,
+    data: {
+        id: number;
+        theme: string;
+        time_format: string;
+        timezone: string;
+        start_of_week: string;
+        default_posting_option: string;
+    }
+}
+
+Method   → PATCH
+Endpoint → /api/v1/user/notification-preferences/
+Auth     → private
+Payload  → {
+    notification_type: string;
+    is_permitted: boolean
+} 
+Response → {
+    status: number,
+    message: string,
+    data: {
+        notification_type: string;
+        is_permitted: boolean
+    }
+}
+
+Method   → DELETE
+Endpoint → /api/v1/user/
+Auth     → private
+Response → {
+    status: number,
+    message: string
+}

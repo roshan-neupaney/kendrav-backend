@@ -1,0 +1,324 @@
+Method   → GET
+Endpoint → /api/v1/workspace/
+Auth     → private  
+Response → {
+    status: number,
+    message: string,
+    data: [{
+        id: number
+        title: string;
+        slug_url: string
+        owner_id: number
+        type: string
+        created_at: string
+        updated_at: string
+    }]
+}
+
+Method   → GET
+Endpoint → /api/v1/workspace/:slug_url/
+Auth     → private  
+Response → {
+    status: number,
+    message: string,
+    data: {
+        id: number
+        title: string;
+        slug_url: string
+        owner_id: number
+        type: string
+        created_at: string
+        updated_at: string
+    }
+}
+
+Method   → POST
+Endpoint → /api/v1/workspace/
+Auth     → private
+Payload  → {
+    title?: string;
+}
+Response → {
+    status: number,
+    message: string,
+    data: {
+        id: number
+        title: string
+        slug_url: string
+        owner_id: number
+        type: string
+        created_at: string
+        updated_at: string
+    }
+}
+
+Method   → PATCH
+Endpoint → /api/v1/workspace/:slug_url
+Auth     → private
+Payload  → {
+    title?: string;
+}
+Response → {
+    status: number,
+    message: string,
+    data: {
+        id: number
+        title: string
+        slug_url: string
+        owner_id: number
+        type: string
+        created_at: string
+        updated_at: string
+    }
+}
+
+Method   → DELETE
+Endpoint → /api/v1/workspace/:slug_url
+Auth     → private
+Response → {
+    status: number,
+    message: string,
+}
+
+Method   → GET
+Endpoint → /api/v1/workspace/:slug_url/members
+Auth     → private
+Response → {
+    status: number,
+    message: string,
+    data: [{
+        id: number
+        user_id: number
+        workspace_id: number
+        is_active: true
+        roles: [string]
+        permissions: [string]
+        created_at: string
+        updated_at: string
+    }]
+}
+
+Method   → POST
+Endpoint → /api/v1/workspace/:slug_url/member/invite
+Auth     → private
+Payload  → {
+    email: string;
+    role_id: number;
+}
+Response → {
+    status: number,
+    message: string,
+    data: {
+        id: number
+        workspace_id: number
+        invited_by: number
+        email: string
+        role_id: number
+        status: string;
+        expires_at: string;
+        created_at: string
+        updated_at: string
+    }
+}
+
+Method   → POST
+Endpoint → /api/v1/workspace/member/accept-invite/
+Auth     → private
+Payload  → {
+    token: string;
+}
+Response → {
+    status: number,
+    message: string,
+    data: {
+        id: number
+        workspace_id: number
+        invited_by: number
+        email: string
+        role_id: number
+        status: 'accepted';
+        expires_at: string;
+        created_at: string
+        updated_at: string
+    }
+}
+
+Method   → POST
+Endpoint → /api/v1/workspace/member/decline-invite
+Auth     → private
+Payload  → {
+    token: string;
+}
+Response → {
+    status: number,
+    message: string,
+    data: {
+        id: number
+        workspace_id: number
+        invited_by: number
+        email: string
+        role_id: number
+        status: 'declined';
+        expires_at: string;
+        created_at: string
+        updated_at: string
+    }
+}
+
+Method   → DELETE
+Endpoint → /api/v1/workspace/:slug_url/member/:id
+Auth     → private
+Response → {
+    status: number,
+    message: string,
+}
+
+Method   → GET
+Endpoint → /api/v1/workspace/:slug_url/roles/
+Auth     → private
+Response → {
+    status: number,
+    message: string,
+    data: [{
+        id: number;
+        title: string;
+        workspace_id: number;
+        is_active: boolean;
+        created_at: string;
+        updated_at: string;
+    }]
+}
+
+Method   → POST
+Endpoint → /api/v1/workspace/:slug_url/roles/
+Auth     → private
+Payload  → {
+    title: string;
+}
+Response → {
+    status: number,
+    message: string,
+    data: {
+        id: number;
+        title: string;
+        workspace_id: number;
+        is_active: boolean;
+        created_at: string;
+        updated_at: string;
+    }
+}
+
+Method   → PATCH
+Endpoint → /api/v1/workspace/:slug_url/roles/:id
+Auth     → private
+Payload  → {
+    title: string;
+}
+Response → {
+    status: number,
+    message: string,
+    data: {
+        id: number;
+        title: string;
+        workspace_id: number;
+        is_active: boolean;
+        created_at: string;
+        updated_at: string;
+    }
+}
+
+Method   → DELETE
+Endpoint → /api/v1/workspace/:slug_url/roles/:id
+Auth     → private
+Response → {
+    status: number,
+    message: string,
+}
+
+Method   → PATCH
+Endpoint → /api/v1/workspace/:slug_url/member/:id/roles
+Auth     → private
+Payload  → {
+    role_id: number;
+}
+Response → {
+    status: number,
+    message: string,
+    data: {
+        id: number;
+        workspace_member_id: number;
+        role_id: number;
+        created_at: string;
+        updated_at: string;
+    }
+}
+
+Method   → GET
+Endpoint → /api/v1/permissions/
+Auth     → private
+Response → {
+    status: number,
+    message: string,
+    data: [{
+        id: number;
+        title: string;
+        is_active: boolean;
+        created_at: string;
+        updated_at: string;
+    }]
+}
+
+Method   → PATCH
+Endpoint → /api/v1/workspace/:slug_url/member/:id/permission
+Auth     → private
+Payload  → {
+    permission_id: number;
+    revoked: boolean
+}
+Response → {
+    status: number,
+    message: string,
+    data: {
+        id: number;
+        workspace_member_id: number;
+        permission_id: number;
+        is_revoked: boolean;
+        created_at: string;
+        updated_at: string;
+    }
+}
+
+Method   → POST
+Endpoint → /api/v1/workspace/:slug_url/roles/:role_id/permissions/
+Auth     → private
+Payload  → {
+    permission_id: number;
+}
+Response → {
+    status: number,
+    message: string,
+    data: {
+        id: number;
+        role_id: number;
+        permission_id: number;
+        created_at: string;
+        updated_at: string;
+    }
+}
+
+Method   → DELETE
+Endpoint → /api/v1/workspace/:slug_url/roles/:role_id/permissions/:permission_id
+Auth     → private
+Response → {
+    status: number,
+    message: string
+}
+
+Method   → POST
+Endpoint → /api/v1/workspace/:slug_url/leave
+Auth     → private
+Response → {
+    status: number,
+    message: string,
+}
+
