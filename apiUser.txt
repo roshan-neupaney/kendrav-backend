@@ -111,6 +111,7 @@ Endpoint → /api/v1/user/profile-picture/
 Auth     → private
 Payload  → {
     file_name: string; //optional
+    context: 'profile'
 }
 Response → {
     status: number,
