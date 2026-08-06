@@ -5,43 +5,49 @@ Auth     → private
 Response → {
     status: number,
     message: string,
-    data: [{
-        id: string;
-        caption: string;
-        workspace_id: number;
-        created_by: number;
-        location: string;
-        music: string;
-        feeling: string;
-        schedule_time: string;
-        status: string;
-        remarks: string;
-        pending_started_at: string;
-        published_at: string;
-        post_medias: [{
-            id: number;
-            media_url: string;
-            media_type: string;
-            order: number;
-            post_id: number;
-            created_id: string;
-            updated_at: string;
-        }];
-        channel_posts: [{
-            id: number;
-            workspace_channel_id: number;
-            post_id: number;
+    data: {
+        results: [{
+            id: string;
+            caption: string;
+            workspace_id: number;
+            created_by: number;
+            location: string;
+            music: string;
+            feeling: string;
+            schedule_time: string;
             status: string;
+            remarks: string;
+            pending_started_at: string;
             published_at: string;
-            platform_post_id: string;
-            error_message: string;
+            post_medias: [{
+                id: number;
+                media_url: string;
+                media_type: string;
+                order: number;
+                post_id: number;
+                created_id: string;
+                updated_at: string;
+            }];
+            channel_posts: [{
+                id: number;
+                workspace_channel_id: number;
+                post_id: number;
+                status: string;
+                published_at: string;
+                platform_post_id: string;
+                error_message: string;
+                created_at: string;
+                updated_at: string;
+            }]
+            is_active: true;
             created_at: string;
             updated_at: string;
-        }]
-        is_active: true;
-        created_at: string;
-        updated_at: string;
-    }]
+        }],
+        next_cursor: string;
+        has_more: boolean;
+        limit: number;
+
+    }
 }
 
                 Get single post
@@ -90,12 +96,12 @@ Response → {
     }
 }
 
-                Create/autosave post
+                Create post
 Method   → POST
 Endpoint → /api/v1/workspace/:slug_url/post/
 Auth     → private
 Payload  → {
-    caption: string;
+    caption?: string;
     location?: string;
     music?: string;
     feeling?: string;
@@ -150,7 +156,8 @@ Response → {
     }
 }
 
-                Update post
+
+                Update/autosave post
 Method   → PATCH
 Endpoint → /api/v1/workspace/:slug_url/post/:post_id
 Auth     → private
@@ -166,7 +173,6 @@ Payload  → {
         order: number;
     }];
     workspace_channel_ids: [number]
-    delete_images: [string]
 }
 Response → {
     status: number,
@@ -209,6 +215,106 @@ Response → {
         updated_at: string;
     }
 }
+
+                Publish post
+Method   → PATCH
+Endpoint → /api/v1/workspace/:slug_url/post/:post_id/publish
+Auth     → private
+Payload  → {
+    delete_images?: [string]
+    status: 'schedule' | 'now' | 'draft'
+}
+Response → {
+    status: number,
+    message: string,
+    data: {
+        id: string;
+        caption: string;
+        workspace_id: number;
+        created_by: number;
+        location: string;
+        music: string;
+        feeling: string;
+        schedule_time: string;
+        status: string;
+        remarks: string;
+        pending_started_at: string;
+        published_at: string;
+        post_medias: [{
+            id: number;
+            media_url: string;
+            media_type: string;
+            order: number;
+            post_id: number;
+            created_id: string;
+            updated_at: string;
+        }];
+        channel_posts: [{
+            id: number;
+            workspace_channel_id: number;
+            post_id: number;
+            status: string;
+            published_at: string;
+            platform_post_id: string;
+            error_message: string;
+            created_at: string;
+            updated_at: string;
+        }]
+        is_active: true;
+        created_at: string;
+        updated_at: string;
+    }
+}
+
+                Approval post
+Method   → PATCH
+Endpoint → /api/v1/workspace/:slug_url/post/:post_id/approval
+Auth     → private
+Payload  → {
+    delete_images?: [string]
+}
+Response → {
+    status: number,
+    message: string,
+    data: {
+        id: string;
+        caption: string;
+        workspace_id: number;
+        created_by: number;
+        location: string;
+        music: string;
+        feeling: string;
+        schedule_time: string;
+        status: string;
+        remarks: string;
+        pending_started_at: string;
+        published_at: string;
+        post_medias: [{
+            id: number;
+            media_url: string;
+            media_type: string;
+            order: number;
+            post_id: number;
+            created_id: string;
+            updated_at: string;
+        }];
+        channel_posts: [{
+            id: number;
+            workspace_channel_id: number;
+            post_id: number;
+            status: string;
+            published_at: string;
+            platform_post_id: string;
+            error_message: string;
+            created_at: string;
+            updated_at: string;
+        }]
+        is_active: true;
+        created_at: string;
+        updated_at: string;
+    }
+}
+
                 Delete post
 Method   → DELETE
 Endpoint → /api/v1/workspace/:slug_url/post/:post_id
@@ -220,7 +326,7 @@ Response → {
 
                 Get presigned URL for media upload
 Method   → POST
-Endpoint → /api/v1/user/post-media/
+Endpoint → /api/v1/media/presigned-url/
 Auth     → private
 Payload  → {
     file_name: string; //optional
@@ -238,22 +344,97 @@ Response → {
     }
 }
 
-                Publish post
+                Approve Post
 Method   → POST
-Endpoint → /api/v1/user/post-media/
+Endpoint → /api/v1/workspace/:slug_url/post/:post_id/approve
+Auth     → private
+Response → {
+    status: number,
+    message: string,
+    data: {
+        id: string;
+        caption: string;
+        workspace_id: number;
+        created_by: number;
+        location: string;
+        music: string;
+        feeling: string;
+        schedule_time: string;
+        status: string;
+        remarks: string;
+        pending_started_at: string;
+        published_at: string;
+        post_medias: [{
+            id: number;
+            media_url: string;
+            media_type: string;
+            order: number;
+            post_id: number;
+            created_id: string;
+            updated_at: string;
+        }];
+        channel_posts: [{
+            id: number;
+            workspace_channel_id: number;
+            post_id: number;
+            status: string;
+            published_at: string;
+            platform_post_id: string;
+            error_message: string;
+            created_at: string;
+            updated_at: string;
+        }]
+        is_active: true;
+        created_at: string;
+        updated_at: string;
+    }
+}
+
+                Reject Post
+Method   → POST
+Endpoint → /api/v1/workspace/:slug_url/post/:post_id/reject
 Auth     → private
 Payload  → {
-    file_name: string; //optional
-    context: 'post'
+    remarks: string;
 }
 Response → {
     status: number,
     message: string,
     data: {
-        signature: string;
-        api_key: string;
-        timestamp: string;
-        folder: string;
-        cloud_name: string;
+        id: string;
+        caption: string;
+        workspace_id: number;
+        created_by: number;
+        location: string;
+        music: string;
+        feeling: string;
+        schedule_time: string;
+        status: string;
+        remarks: string;
+        pending_started_at: string;
+        published_at: string;
+        post_medias: [{
+            id: number;
+            media_url: string;
+            media_type: string;
+            order: number;
+            post_id: number;
+            created_id: string;
+            updated_at: string;
+        }];
+        channel_posts: [{
+            id: number;
+            workspace_channel_id: number;
+            post_id: number;
+            status: string;
+            published_at: string;
+            platform_post_id: string;
+            error_message: string;
+            created_at: string;
+            updated_at: string;
+        }]
+        is_active: true;
+        created_at: string;
+        updated_at: string;
     }
 }

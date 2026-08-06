@@ -1,0 +1,169 @@
+                Get All Channels
+Method   → GET
+Endpoint → /api/v1/channel/
+Auth     → public
+Response → {
+    status: number,
+    message: string,
+    data: [{
+        id: string;
+        image_url: string;
+        channel_url: string;
+        title: string;
+        is_active: true;
+        created_at: string;
+        updated_at: string;
+    }]
+}
+
+                Post Channel
+Method   → POST
+Endpoint → /api/v1/channel/
+Auth     → private(Superadmin Only)
+Payload  → {
+    image_url: string;
+    channel_url: string;
+    title: string;
+    is_active: boolean;
+}
+Response → {
+    status: number,
+    message: string,
+    data: {
+        id: string;
+        image_url: string;
+        channel_url: string;
+        title: string;
+        is_active: true;
+        created_at: string;
+        updated_at: string;
+    }
+}
+
+                Update Channel
+Method   → PATCH
+Endpoint → /api/v1/channel/:id
+Auth     → private(Superadmin Only)
+Payload  → {
+    image_url: string;
+    channel_url: string;
+    title: string;
+    is_active: boolean;
+}
+Response → {
+    status: number,
+    message: string,
+    data: {
+        id: string;
+        image_url: string;
+        channel_url: string;
+        title: string;
+        is_active: true;
+        created_at: string;
+        updated_at: string;
+    }
+}
+
+                Delete Channel
+Method   → DELETE
+Endpoint → /api/v1/channel/:id
+Auth     → private(Superadmin Only)
+Response → {
+    status: number,
+    message: string,
+}
+
+                Get Workspace Channels
+Method   → GET
+Endpoint → /api/v1/workspace/:slug_url/channel/
+Auth     → private
+Response → {
+    status: number,
+    message: string,
+    data: [{
+        id: number;
+        workspace_id: number;
+        channel_id: number;
+        channel: {
+            id: string;
+            image_url: string;
+            channel_url: string;
+            title: string;
+            is_active: true;
+            created_at: string;
+            updated_at: string;
+        };
+        channel_config: {
+            id: number;
+            token_expires_at: string;
+            is_token_valid: boolean;
+        };
+        email: string;
+        username: string;
+        account_id: string;
+        is_active: true
+        
+    }]
+}
+
+                Connect a Channel(OAuth)
+Method   → POST
+Endpoint → /api/v1/workspace/:slug_url/channel/connect
+Auth     → private
+Payload  → {
+    code: string;
+    channel_id: number;
+}
+Response → {
+    status: number,
+    message: string,
+    data: {
+        id: number;
+        workspace_id: number;
+        channel_id: number;
+        channel: {
+            id: string;
+            image_url: string;
+            channel_url: string;
+            title: string;
+            is_active: true;
+            created_at: string;
+            updated_at: string;
+        };
+        channel_config: {
+            id: number;
+            token_expires_at: string;
+            is_token_valid: boolean;
+        };
+        email: string;
+        username: string;
+        account_id: string;
+        is_active: true
+        
+    }
+}
+
+                Disconnect a Channel
+Method   → POST
+Endpoint → /api/v1/workspace/:slug_url/channel/:workspace_channel_id/disconnect
+Auth     → private
+Response → {
+    status: number,
+    message: string,
+}
+
+                Get channel health status
+Method   → GET
+Endpoint → /api/v1/workspace/:slug_url/channel/:workspace_channel_id/channel-health
+Auth     → private
+Response → {
+    status: number,
+    message: string,
+    data: {
+        workspace_channel_id: number,
+        is_healthy: boolean,
+        token_expires_at: string,
+        last_checked_at: string,
+        error_message: string | null
+    }
+}

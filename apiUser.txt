@@ -107,7 +107,7 @@ Response → {
 }
 
 Method   → POST
-Endpoint → /api/v1/user/profile-picture/
+Endpoint → /api/v1/media/presigned-url/
 Auth     → private
 Payload  → {
     file_name: string; //optional
