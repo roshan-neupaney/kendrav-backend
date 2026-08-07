@@ -1,0 +1,80 @@
+                Get All Notifications
+Method   → GET
+Endpoint → /api/v1/workspace/:slug_url/notification/?cursor=string&limit=10&is_read=boolean
+Auth     → private
+Response → {
+    status: number,
+    message: string,
+    data: [{
+        id: number;
+        user_id: number;
+        workspace_id: number;
+        notification_id: number;
+        notification: {
+            id: number;
+            title: string;
+            body: string;
+            image_url: string;
+            action_type: string;
+            redirect_url: string;
+            is_active: string;
+        };
+        is_read: boolean;
+        created_at: string;
+        updated_at: string;
+    }]
+}
+
+                Read One Notification
+Method   → PATCH
+Endpoint → /api/v1/workspace/:slug_url/notification/read/:id
+Auth     → private
+Response → {
+    status: number,
+    message: string,
+    data: {
+        id: number;
+        user_id: number;
+        workspace_id: number;
+        notification_id: number;
+        notification: {
+            id: number;
+            title: string;
+            body: string;
+            image_url: string;
+            action_type: string;
+            redirect_url: string;
+            is_active: string;
+        };
+        is_read: boolean;
+        created_at: string;
+        updated_at: string;
+    }
+}
+
+                Read All Notification
+Method   → PATCH
+Endpoint → /api/v1/workspace/:slug_url/notification/read-all
+Auth     → private
+Response → {
+    status: number,
+    message: string,
+    data: [{
+        id: number;
+        user_id: number;
+        workspace_id: number;
+        notification_id: number;
+        notification: {
+            id: number;
+            title: string;
+            body: string;
+            image_url: string;
+            action_type: string;
+            redirect_url: string;
+            is_active: string;
+        };
+        is_read: boolean;
+        created_at: string;
+        updated_at: string;
+    }]
+}
