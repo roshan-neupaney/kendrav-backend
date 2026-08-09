@@ -51,7 +51,6 @@ Payload  → {
         title: string;
         description: string;
         is_global: boolean;(only superadmin)
-        is_active: boolean;
 }
 Response → {
     status: number,

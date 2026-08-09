@@ -86,10 +86,7 @@ Response → {
         id: number;
         title: string;
         logo: string;
-        product_code: string;
-        signed_field_names: string;
-        success_url: string;
-        failure_url: string;
+        gateway_type: string;
         is_active: boolean;
         created_at: string;
         updated_at: string;
@@ -104,15 +101,12 @@ Response → {
     status: number,
     message: string,
     data: [{
-        id: number;
-        user_id: number;
-        subscription_id: number;
+        id: number
+        user_id: number
+        subscription_id: number
         payment_method_id: number;
         total_amount: number;
-        transaction_uuid: string;
         status: string;
-        ref_id: string;
-        is_active: boolean;
         created_at: string;
         updated_at: string;
     }]
@@ -123,7 +117,7 @@ Endpoint → /api/v1/payment/initiate/
 Auth     → private
 Payload  → {
     subscription_id: number,
-    payment_method_id: number
+    payment_method_id: number,
 }
 Response → {
     status: number,
@@ -137,12 +131,27 @@ Response → {
 // Payment callback after user pays
 Method   → POST  
 Endpoint → /api/v1/payment/verify/
-Auth     → public
+Auth     → private
+Payload  → {
+    transaction_code: string,
+    gateway_type: string;
+}
 Response → {
     status: number,
     message: string,
     data: {
-        payment_url: string
-        transaction_uuid: string
+        id: number
+        user_id: number
+        subscription_id: number
+        payment_method_id: number;
+        total_amount: number;
+        status: string;
     }
 }
+
+Method   → POST
+Endpoint → /api/v1/payment/webhook/
+Auth     → public (no JWT — eSewa server has no user token)
+          but verified by HMAC signature
+Payload  → varies per gateway (eSewa sends different fields than Khalti)
+Response → { status: 200 }
