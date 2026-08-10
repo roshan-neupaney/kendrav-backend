@@ -1,0 +1,119 @@
+                Get All Notifications
+Method   → GET
+Endpoint → /api/v1/workspace/:workspace_id/notification/?cursor=string&limit=10&is_read=boolean
+Auth     → private
+Response → {
+    status: number,
+    message: string,
+    data: {
+        results: [{
+            id: number;
+            user_id: number;
+            workspace_id: number;
+            notification_id: number;
+            notification: {
+                id: number;
+                title: string;
+                body: string;
+                image_url: string;
+                action_type: string;
+                redirect_url: string;
+                is_active: boolean;
+            };
+            is_read: boolean;
+            created_at: string;
+            updated_at: string;
+        }]
+        next_cursor: string;
+        has_more: boolean;
+        limit: number;
+    }
+}
+
+                Read One Notification
+Method   → PATCH
+Endpoint → /api/v1/workspace/:workspace_id/notification/read/:id
+Auth     → private
+Response → {
+    status: number,
+    message: string,
+    data: {
+        id: number;
+        user_id: number;
+        workspace_id: number;
+        notification_id: number;
+        notification: {
+            id: number;
+            title: string;
+            body: string;
+            image_url: string;
+            action_type: string;
+            redirect_url: string;
+            is_active: boolean;
+        };
+        is_read: boolean;
+        created_at: string;
+        updated_at: string;
+    }
+}
+
+                Read All Notification
+Method   → PATCH
+Endpoint → /api/v1/workspace/:workspace_id/notification/read-all
+Auth     → private
+Response → {
+    status: number,
+    message: string,
+    data: [{
+        id: number;
+        user_id: number;
+        workspace_id: number;
+        notification_id: number;
+        notification: {
+            id: number;
+            title: string;
+            body: string;
+            image_url: string;
+            action_type: string;
+            redirect_url: string;
+            is_active: boolean;
+        };
+        is_read: boolean;
+        created_at: string;
+        updated_at: string;
+    }]
+}
+
+                Register FCM Token
+Method   → POST
+Endpoint → /api/v1/notification/fcm-token/register
+Auth     → private
+Payload  → {
+        fcm_token: string;
+        device_id: string;
+}
+Response → {
+    status: number,
+    message: string,
+    data: {
+        id: number;
+        user_id: number;
+        fcm_token: string;
+        device_id: string;
+        is_active: boolean;
+        created_at: string;
+        updated_at: string;
+    }
+}
+
+                Unregister FCM Token
+Method   → POST
+Endpoint → /api/v1/notification/fcm-token/unregister
+Auth     → private
+Payload  → {
+        device_id: string;
+}
+Response → {
+    status: number,
+    message: string,
+}
