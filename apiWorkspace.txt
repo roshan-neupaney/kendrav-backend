@@ -16,7 +16,7 @@ Response → {
 }
 
 Method   → GET
-Endpoint → /api/v1/workspace/:slug_url/
+Endpoint → /api/v1/workspace/:workspace_id/
 Auth     → private  
 Response → {
     status: number,
@@ -53,7 +53,7 @@ Response → {
 }
 
 Method   → PATCH
-Endpoint → /api/v1/workspace/:slug_url
+Endpoint → /api/v1/workspace/:workspace_id
 Auth     → private
 Payload  → {
     title?: string;
@@ -73,7 +73,7 @@ Response → {
 }
 
 Method   → DELETE
-Endpoint → /api/v1/workspace/:slug_url
+Endpoint → /api/v1/workspace/:workspace_id
 Auth     → private
 Response → {
     status: number,
@@ -81,7 +81,7 @@ Response → {
 }
 
 Method   → GET
-Endpoint → /api/v1/workspace/:slug_url/members
+Endpoint → /api/v1/workspace/:workspace_id/members
 Auth     → private
 Response → {
     status: number,
@@ -99,7 +99,7 @@ Response → {
 }
 
 Method   → POST
-Endpoint → /api/v1/workspace/:slug_url/member/invite
+Endpoint → /api/v1/workspace/:workspace_id/member/invite
 Auth     → private
 Payload  → {
     email: string;
@@ -166,7 +166,7 @@ Response → {
 }
 
 Method   → DELETE
-Endpoint → /api/v1/workspace/:slug_url/member/:id
+Endpoint → /api/v1/workspace/:workspace_id/member/:id
 Auth     → private
 Response → {
     status: number,
@@ -174,7 +174,7 @@ Response → {
 }
 
 Method   → GET
-Endpoint → /api/v1/workspace/:slug_url/roles/
+Endpoint → /api/v1/workspace/:workspace_id/roles/
 Auth     → private
 Response → {
     status: number,
@@ -190,7 +190,7 @@ Response → {
 }
 
 Method   → POST
-Endpoint → /api/v1/workspace/:slug_url/roles/
+Endpoint → /api/v1/workspace/:workspace_id/roles/
 Auth     → private
 Payload  → {
     title: string;
@@ -209,7 +209,7 @@ Response → {
 }
 
 Method   → PATCH
-Endpoint → /api/v1/workspace/:slug_url/roles/:id
+Endpoint → /api/v1/workspace/:workspace_id/roles/:id
 Auth     → private
 Payload  → {
     title: string;
@@ -228,7 +228,7 @@ Response → {
 }
 
 Method   → DELETE
-Endpoint → /api/v1/workspace/:slug_url/roles/:id
+Endpoint → /api/v1/workspace/:workspace_id/roles/:id
 Auth     → private
 Response → {
     status: number,
@@ -236,7 +236,7 @@ Response → {
 }
 
 Method   → PATCH
-Endpoint → /api/v1/workspace/:slug_url/member/:id/roles
+Endpoint → /api/v1/workspace/:workspace_id/member/:id/roles
 Auth     → private
 Payload  → {
     role_id: number;
@@ -269,7 +269,7 @@ Response → {
 }
 
 Method   → PATCH
-Endpoint → /api/v1/workspace/:slug_url/member/:id/permission
+Endpoint → /api/v1/workspace/:workspace_id/member/:id/permission
 Auth     → private
 Payload  → {
     permission_id: number;
@@ -289,7 +289,7 @@ Response → {
 }
 
 Method   → POST
-Endpoint → /api/v1/workspace/:slug_url/roles/:role_id/permissions/
+Endpoint → /api/v1/workspace/:workspace_id/roles/:role_id/permissions/
 Auth     → private
 Payload  → {
     permission_id: number;
@@ -307,7 +307,7 @@ Response → {
 }
 
 Method   → DELETE
-Endpoint → /api/v1/workspace/:slug_url/roles/:role_id/permissions/:permission_id
+Endpoint → /api/v1/workspace/:workspace_id/roles/:role_id/permissions/:permission_id
 Auth     → private
 Response → {
     status: number,
@@ -315,7 +315,7 @@ Response → {
 }
 
 Method   → POST
-Endpoint → /api/v1/workspace/:slug_url/leave
+Endpoint → /api/v1/workspace/:workspace_id/leave
 Auth     → private
 Response → {
     status: number,

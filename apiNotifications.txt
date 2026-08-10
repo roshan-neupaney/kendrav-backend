@@ -1,6 +1,6 @@
                 Get All Notifications
 Method   → GET
-Endpoint → /api/v1/workspace/:slug_url/notification/?cursor=string&limit=10&is_read=boolean
+Endpoint → /api/v1/workspace/:workspace_id/notification/?cursor=string&limit=10&is_read=boolean
 Auth     → private
 Response → {
     status: number,
@@ -32,7 +32,7 @@ Response → {
 
                 Read One Notification
 Method   → PATCH
-Endpoint → /api/v1/workspace/:slug_url/notification/read/:id
+Endpoint → /api/v1/workspace/:workspace_id/notification/read/:id
 Auth     → private
 Response → {
     status: number,
@@ -59,7 +59,7 @@ Response → {
 
                 Read All Notification
 Method   → PATCH
-Endpoint → /api/v1/workspace/:slug_url/notification/read-all
+Endpoint → /api/v1/workspace/:workspace_id/notification/read-all
 Auth     → private
 Response → {
     status: number,

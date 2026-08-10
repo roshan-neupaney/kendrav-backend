@@ -75,7 +75,7 @@ Response → {
 
                 Get Workspace Channels
 Method   → GET
-Endpoint → /api/v1/workspace/:slug_url/channel/
+Endpoint → /api/v1/workspace/:workspace_id/channel/
 Auth     → private
 Response → {
     status: number,
@@ -108,7 +108,7 @@ Response → {
 
                 Connect a Channel(OAuth)
 Method   → POST
-Endpoint → /api/v1/workspace/:slug_url/channel/connect
+Endpoint → /api/v1/workspace/:workspace_id/channel/connect
 Auth     → private
 Payload  → {
     code: string;
@@ -145,7 +145,7 @@ Response → {
 
                 Disconnect a Channel
 Method   → POST
-Endpoint → /api/v1/workspace/:slug_url/channel/:workspace_channel_id/disconnect
+Endpoint → /api/v1/workspace/:workspace_id/channel/:workspace_channel_id/disconnect
 Auth     → private
 Response → {
     status: number,
@@ -154,7 +154,7 @@ Response → {
 
                 Get channel health status
 Method   → GET
-Endpoint → /api/v1/workspace/:slug_url/channel/:workspace_channel_id/channel-health
+Endpoint → /api/v1/workspace/:workspace_id/channel/:workspace_channel_id/channel-health
 Auth     → private
 Response → {
     status: number,

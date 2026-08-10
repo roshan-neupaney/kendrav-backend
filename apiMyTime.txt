@@ -1,6 +1,6 @@
                 Get All My Times
 Method   → GET
-Endpoint → /api/v1/workspace/:slug_url/my-times
+Endpoint → /api/v1/workspace/:workspace_id/my-times
 Auth     → private
 Response → {
     status: number,
@@ -18,7 +18,7 @@ Response → {
 
                 Create My Time
 Method   → POST
-Endpoint → /api/v1/workspace/:slug_url/my-times
+Endpoint → /api/v1/workspace/:workspace_id/my-times
 Auth     → private
 Payload  → {
     day: string;
@@ -41,7 +41,7 @@ Response → {
 
                 Update My Time
 Method   → PATCH
-Endpoint → /api/v1/workspace/:slug_url/my-times/:id
+Endpoint → /api/v1/workspace/:workspace_id/my-times/:id
 Auth     → private
 Payload  → {
     day: string;
@@ -64,7 +64,7 @@ Response → {
 
                 Delete My Time
 Method   → DELETE
-Endpoint → /api/v1/workspace/:slug_url/my-times/:id
+Endpoint → /api/v1/workspace/:workspace_id/my-times/:id
 Auth     → private
 Response → {
     status: number,

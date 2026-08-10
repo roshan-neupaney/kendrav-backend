@@ -1,6 +1,6 @@
                 List posts (with filters — status, date range)
 Method   → GET
-Endpoint → /api/v1/workspace/:slug_url/post/?cursor=post_id&limit=10&created_by=user_id&status=pending&start_date=yyyy-mm-dd&end_date=yyyy-mm-dd&sort_by=created_at
+Endpoint → /api/v1/workspace/:workspace_id/post/?cursor=post_id&limit=10&created_by=user_id&status=pending&start_date=yyyy-mm-dd&end_date=yyyy-mm-dd&sort_by=created_at
 Auth     → private
 Response → {
     status: number,
@@ -52,7 +52,7 @@ Response → {
 
                 Get single post
 Method   → GET
-Endpoint → /api/v1/workspace/:slug_url/post/:post_id/
+Endpoint → /api/v1/workspace/:workspace_id/post/:post_id/
 Auth     → private
 Response → {
     status: number,
@@ -98,7 +98,7 @@ Response → {
 
                 Create post
 Method   → POST
-Endpoint → /api/v1/workspace/:slug_url/post/
+Endpoint → /api/v1/workspace/:workspace_id/post/
 Auth     → private
 Payload  → {
     caption?: string;
@@ -159,7 +159,7 @@ Response → {
 
                 Update/autosave post
 Method   → PATCH
-Endpoint → /api/v1/workspace/:slug_url/post/:post_id
+Endpoint → /api/v1/workspace/:workspace_id/post/:post_id
 Auth     → private
 Payload  → {
     caption?: string;
@@ -218,7 +218,7 @@ Response → {
 
                 Publish post
 Method   → PATCH
-Endpoint → /api/v1/workspace/:slug_url/post/:post_id/publish
+Endpoint → /api/v1/workspace/:workspace_id/post/:post_id/publish
 Auth     → private
 Payload  → {
     delete_images?: [string]
@@ -268,7 +268,7 @@ Response → {
 
                 Approval post
 Method   → PATCH
-Endpoint → /api/v1/workspace/:slug_url/post/:post_id/approval
+Endpoint → /api/v1/workspace/:workspace_id/post/:post_id/approval
 Auth     → private
 Payload  → {
     delete_images?: [string]
@@ -317,7 +317,7 @@ Response → {
 
                 Delete post
 Method   → DELETE
-Endpoint → /api/v1/workspace/:slug_url/post/:post_id
+Endpoint → /api/v1/workspace/:workspace_id/post/:post_id
 Auth     → private
 Response → {
     status: number,
@@ -346,7 +346,7 @@ Response → {
 
                 Approve Post
 Method   → POST
-Endpoint → /api/v1/workspace/:slug_url/post/:post_id/approve
+Endpoint → /api/v1/workspace/:workspace_id/post/:post_id/approve
 Auth     → private
 Response → {
     status: number,
@@ -392,7 +392,7 @@ Response → {
 
                 Reject Post
 Method   → POST
-Endpoint → /api/v1/workspace/:slug_url/post/:post_id/reject
+Endpoint → /api/v1/workspace/:workspace_id/post/:post_id/reject
 Auth     → private
 Payload  → {
     remarks: string;
