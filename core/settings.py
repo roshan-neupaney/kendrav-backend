@@ -33,16 +33,26 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "rest_framework",
-    "rest_framework.authtoken",
     "rest_framework_simplejwt",
     "rest_framework_simplejwt.token_blacklist",
-    "users",
-    "authentication",
     "django.contrib.sites",
     "allauth",
     "allauth.account",
     "allauth.socialaccount",
     "allauth.socialaccount.providers.google",
+
+    "users",
+    "authentication",
+    "notifications",
+    "payments",
+    "posts",
+    "subscriptions",
+    "workspaces",
+    "workspace_templates",
+    "channels",
+    "ideas",
+    "medias",
+
     "dj_rest_auth",
     "dj_rest_auth.registration",
     "corsheaders",
@@ -64,6 +74,7 @@ REST_AUTH = {
     "JWT_AUTH_REFRESH_COOKIE": "refresh-token",
     "JWT_AUTH_HTTPONLY": False,
     "JWT_AUTH_RETURN_EXPIRATION": True,
+    "TOKEN_MODEL": None,
 }
 
 SIMPLE_JWT = {
