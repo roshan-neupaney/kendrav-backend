@@ -15,7 +15,7 @@ StatusChoices = [
     ("CANCELED", "CANCELED"),
 ]
 
-class PaymentMethods(models.Model):
+class PaymentMethod(models.Model):
     title = models.CharField(max_length=100)
     logo = models.CharField(max_length=300, blank=True, null=True)
     config = models.JSONField(default=dict, blank=True)
@@ -24,10 +24,10 @@ class PaymentMethods(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
-class PaymentHistorys(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='payment_history')
-    subscription = models.ForeignKey('subscriptions.Subscriptions', on_delete=models.SET_NULL, null=True, related_name='payment_history')
-    payment_method = models.ForeignKey(PaymentMethods, on_delete=models.SET_NULL, null=True, related_name='payment_history')
+class PaymentHistory(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='user_payment_histories')
+    subscription = models.ForeignKey('subscriptions.Subscription', on_delete=models.SET_NULL, null=True, related_name='payment_histories')
+    payment_method = models.ForeignKey(PaymentMethod, on_delete=models.SET_NULL, null=True, related_name='payment_method_histories')
     total_amount = models.DecimalField(max_digits=10, decimal_places=2)
     transaction_uuid = models.CharField(max_length=100, blank=True, unique=True, null=True)
     gateway_response = models.JSONField(default=dict, blank=True)
