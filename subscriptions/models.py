@@ -11,7 +11,7 @@ TemplateTypeChoices = [
     ("full", "Full"),
 ]
 
-class Subscriptions(models.Model):
+class Subscription(models.Model):
     plan_name = models.CharField(max_length=100)
     plan_type = models.CharField(max_length=50, choices=SubscriptionsTypeChoices)
     max_channels = models.IntegerField()

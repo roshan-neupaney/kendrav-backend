@@ -44,9 +44,9 @@ class Profile(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
 
-class Preferences(models.Model):
+class Preference(models.Model):
     user = models.OneToOneField(
-        User, on_delete=models.CASCADE, related_name="preferences"
+        User, on_delete=models.CASCADE, related_name="preference"
     )
     theme = models.CharField(max_length=20, default="light", choices=ThemeChoices)
     timezone = models.CharField(max_length=50, default="UTC")
@@ -65,7 +65,7 @@ class Preferences(models.Model):
     def __str__(self):
         return self.user.username
 
-class UserTokens(models.Model):
+class UserToken(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="user_tokens")
     refresh_token = models.TextField()
     device_id = models.CharField(max_length=255, blank=True, null=True)
@@ -75,18 +75,18 @@ class UserTokens(models.Model):
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
-class UserSubscriptions(models.Model):
+class UserSubscription(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="user_subscriptions")
     start_date = models.DateTimeField(auto_now_add=True)
     end_date = models.DateTimeField(blank=True, null=True)
-    subscription = models.ForeignKey('subscriptions.Subscriptions', on_delete=models.CASCADE, related_name="user_subscriptions")
-    payment_history = models.ForeignKey('payments.PaymentHistory', on_delete=models.SET_NULL, blank=True, null=True, related_name="user_subscriptions")
+    subscription = models.ForeignKey('subscriptions.Subscription', on_delete=models.CASCADE, related_name="subscribed_users")
+    payment_history = models.ForeignKey('payments.PaymentHistory', on_delete=models.SET_NULL, blank=True, null=True, related_name="subscriptions_histories")
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
-class UserFcmTokens(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="user_fcm_tokens")
+class UserFcmToken(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="fcm_tokens")
     fcm_token = models.CharField(max_length=255)
     device_id = models.CharField(max_length=255, blank=True, null=True)
     is_active = models.BooleanField(default=True)

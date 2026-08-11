@@ -1,13 +1,13 @@
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
-from .models import Profile, Preferences
+from .models import Profile, Preference
 
 User = get_user_model()
 
 
 class PreferencesSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Preferences
+        model = Preference
         fields = "__all__"
         exclude = ["id", "user"]
 
