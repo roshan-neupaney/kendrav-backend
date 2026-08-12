@@ -61,31 +61,20 @@ class RegistrationSerializer(serializers.ModelSerializer):
         }
 
 
-class LoginSerializer(serializers.ModelSerializer):
-    username_field = "email"
+class LoginSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    password = serializers.CharField(write_only=True)
     device_id = serializers.CharField(write_only=True)
     device_name = serializers.CharField(write_only=True, required=False)
     location = serializers.CharField(write_only=True, required=False)
 
-    class Meta:
-        model = User
-        fields = [
-            "email",
-            "password",
-            "device_id",
-            "device_name",
-            "location",
-        ]
+    def create(self, attrs):
+        email = attrs.pop("email")
+        password = attrs.pop("password")
+        device_id = attrs.pop("device_id")
+        device_name = attrs.pop("device_name", "")
+        location = attrs.pop("location", "")
 
-    def create(self, validated_data, headers):
-        print(headers)
-        email = validated_data.pop("email")
-        password = validated_data.pop("password")
-
-        try:
-            user = User.objects.get(email=email)
-        except User.DoesNotExist:
-            raise serializers.ValidationError("Invalid Email")
         try:
             user = User.objects.get(email=email)
         except User.DoesNotExist:
@@ -94,14 +83,24 @@ class LoginSerializer(serializers.ModelSerializer):
         if not user.check_password(password):
             raise serializers.ValidationError("Incorrect Password")
 
-        validated_data[self.username_field] = user.username
-        data = super().validate(validated_data)
+        refresh = RefreshToken.for_user(user)
+        access_token = str(refresh.access_token)
+        refresh_token = str(refresh)
 
-        data["access_token"] = data.pop("access")
-        data["refresh_token"] = data.pop("refresh")
+        user_old_tokens = UserToken.objects.filter(user=user, device_id=device_id, is_active=True)
+        for token_data in user_old_tokens:
+            old_refresh_token = RefreshToken(token_data.refresh_token)
+            old_refresh_token.blacklist()
+            token_data.is_active = False
 
-        return {
-            "message": "Login Successfull",
-            "data": data,
-            "status": status.HTTP_200_OK,
-        }
+        UserToken.objects.bulk_update(user_old_tokens, ["is_active"])
+
+        UserToken.objects.create(
+            user=user,
+            refresh_token=refresh_token,
+            location=location,
+            device_id=device_id,
+            device_name=device_name,
+        )
+
+        return {"access_token": access_token, "refresh_token": refresh_token}

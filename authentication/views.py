@@ -34,9 +34,22 @@ class RegistrationView(APIView):
 class LoginView(APIView):
     permission_classes = [AllowAny]
     def post(self, request):
-        serializer = LoginSerializer(data=request.data, headers=request.headers)
+        serializer = LoginSerializer(data=request.data)
         if serializer.is_valid(raise_exception=True):
-            serializer.save()
+            with transaction.atomic():
+                result = serializer.save()
+                
+                return Response(
+                    {
+                        "message": "Login Successfully",
+                        "status": status.HTTP_200_OK,
+                        "data": {
+                            "refresh_token": result['refresh_token'],
+                            "access_token": result['access_token'],
+                        }
+                    }, status=status.HTTP_200_OK
+                )
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class GoogleLoginView(SocialLoginView):

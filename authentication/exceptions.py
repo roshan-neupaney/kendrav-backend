@@ -1,28 +1,44 @@
 from rest_framework.views import exception_handler
 
+
 def custom_exception_handler(exc, context):
     response = exception_handler(exc, context)
 
     if response is not None:
+        print("RESPONSE DATA:", response.data)
+        # print("TYPES:", {k: type(v) for k, v in response.data.items()})
         # Convert default errors to your format
         if isinstance(response.data, dict):
             errors = []
-            
+
             # Handle field errors
             for key, value in response.data.items():
                 if isinstance(value, list):
-                    errors.extend(value)
+                    print('hellooos')
+                    for error in value:
+                        error_str = str(error)
+                        if key == "non_field_errors" or not error_str.startswith("This"):
+                            errors.append(error_str)
+                        else:
+                            errors.append(
+                                f"{key.capitalize()} {error_str.removeprefix('This ')}"
+                            )
+
                 else:
-                    errors.append(str(value))
-            
-            response.data = {
-                "message": errors,
-                "status": response.status_code
-            }
+                    value_str = str(value)
+                    if key == "non_field_errors" or not value_str.startswith("This"):
+                        errors.append(value_str)
+                    else:
+                        errors.append(
+                            f"{key.capitalize()} {value_str.removeprefix('This ')}"
+                        )
+
+            response.data = {"message": errors, "status": response.status_code}
+        elif isinstance(response.data, list):
+            errors = [str(error) for error in response.data]
         else:
-            response.data = {
-                "message": [str(response.data)],
-                "status": response.status_code
-            }
+            errors = [str(response.data)]
+        
+        response.data = {"message": errors, "status": response.status_code}
 
     return response
