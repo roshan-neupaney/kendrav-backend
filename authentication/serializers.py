@@ -61,13 +61,31 @@ class RegistrationSerializer(serializers.ModelSerializer):
         }
 
 
-class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
+class LoginSerializer(serializers.ModelSerializer):
     username_field = "email"
+    device_id = serializers.CharField(write_only=True)
+    device_name = serializers.CharField(write_only=True, required=False)
+    location = serializers.CharField(write_only=True, required=False)
 
-    def validate(self, attrs):
-        email = attrs.get("email")
-        password = attrs.get("password")
+    class Meta:
+        model = User
+        fields = [
+            "email",
+            "password",
+            "device_id",
+            "device_name",
+            "location",
+        ]
 
+    def create(self, validated_data, headers):
+        print(headers)
+        email = validated_data.pop("email")
+        password = validated_data.pop("password")
+
+        try:
+            user = User.objects.get(email=email)
+        except User.DoesNotExist:
+            raise serializers.ValidationError("Invalid Email")
         try:
             user = User.objects.get(email=email)
         except User.DoesNotExist:
@@ -76,8 +94,8 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
         if not user.check_password(password):
             raise serializers.ValidationError("Incorrect Password")
 
-        attrs[self.username_field] = user.username
-        data = super().validate(attrs)
+        validated_data[self.username_field] = user.username
+        data = super().validate(validated_data)
 
         data["access_token"] = data.pop("access")
         data["refresh_token"] = data.pop("refresh")

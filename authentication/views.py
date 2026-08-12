@@ -1,7 +1,7 @@
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from .serializers import RegistrationSerializer, MyTokenObtainPairSerializer
+from .serializers import RegistrationSerializer, LoginSerializer
 from rest_framework_simplejwt.views import TokenObtainPairView
 from allauth.socialaccount.providers.google.views import GoogleOAuth2Adapter
 from dj_rest_auth.registration.views import SocialLoginView
@@ -31,9 +31,13 @@ class RegistrationView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class LoginView(TokenObtainPairView):
+class LoginView(APIView):
     permission_classes = [AllowAny]
-    serializer_class = MyTokenObtainPairSerializer
+    def post(self, request):
+        serializer = LoginSerializer(data=request.data, headers=request.headers)
+        if serializer.is_valid(raise_exception=True):
+            serializer.save()
+
 
 class GoogleLoginView(SocialLoginView):
     permission_classes = [AllowAny]
