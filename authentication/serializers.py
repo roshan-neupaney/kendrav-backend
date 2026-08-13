@@ -1,7 +1,8 @@
-from rest_framework import serializers, status
-from django.contrib.auth import get_user_model
-from rest_framework_simplejwt.tokens import RefreshToken
 from users.models import UserToken
+from django.contrib.auth import get_user_model
+from rest_framework import serializers
+from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework.response import Response
 
 User = get_user_model()
 
@@ -86,7 +87,9 @@ class LoginSerializer(serializers.Serializer):
         access_token = str(refresh.access_token)
         refresh_token = str(refresh)
 
-        user_old_tokens = UserToken.objects.filter(user=user, device_id=device_id, is_active=True)
+        user_old_tokens = UserToken.objects.filter(
+            user=user, device_id=device_id, is_active=True
+        )
         for token_data in user_old_tokens:
             old_refresh_token = RefreshToken(token_data.refresh_token)
             old_refresh_token.blacklist()
@@ -103,3 +106,11 @@ class LoginSerializer(serializers.Serializer):
         )
 
         return {"access_token": access_token, "refresh_token": refresh_token}
+    
+class LogoutSerializer(serializers.Serializer):
+    device_id = serializers.CharField()
+    def validate(self, attrs):
+        device_id = attrs.pop('device_id')
+        print(device_id)
+        return Response({"device_id": device_id})
+        # device_id = headers.get('header')

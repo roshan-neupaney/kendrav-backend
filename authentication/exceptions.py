@@ -5,8 +5,6 @@ def custom_exception_handler(exc, context):
     response = exception_handler(exc, context)
 
     if response is not None:
-        print("RESPONSE DATA:", response.data)
-        # print("TYPES:", {k: type(v) for k, v in response.data.items()})
         # Convert default errors to your format
         if isinstance(response.data, dict):
             errors = []
