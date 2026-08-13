@@ -3,6 +3,7 @@ from django.contrib.auth import get_user_model
 from rest_framework import serializers
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.response import Response
+from rest_framework_simplejwt.exceptions import TokenError
 
 User = get_user_model()
 
@@ -91,8 +92,11 @@ class LoginSerializer(serializers.Serializer):
             user=user, device_id=device_id, is_active=True
         )
         for token_data in user_old_tokens:
-            old_refresh_token = RefreshToken(token_data.refresh_token)
-            old_refresh_token.blacklist()
+            try:
+                old_refresh_token = RefreshToken(token_data.refresh_token)
+                old_refresh_token.blacklist()
+            except TokenError:
+                pass
             token_data.is_active = False
 
         UserToken.objects.bulk_update(user_old_tokens, ["is_active"])
@@ -107,10 +111,7 @@ class LoginSerializer(serializers.Serializer):
 
         return {"access_token": access_token, "refresh_token": refresh_token}
     
-class LogoutSerializer(serializers.Serializer):
-    device_id = serializers.CharField()
-    def validate(self, attrs):
-        device_id = attrs.pop('device_id')
-        print(device_id)
-        return Response({"device_id": device_id})
-        # device_id = headers.get('header')
+class ActiveSessionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model= UserToken
+        fields= ["id", "user", "device_id", "device_name", "location", "is_active", "last_active_at", "created_at", "updated_at"]

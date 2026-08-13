@@ -1,12 +1,14 @@
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from .serializers import RegistrationSerializer, LoginSerializer, LogoutSerializer
+from .serializers import RegistrationSerializer, LoginSerializer, ActiveSessionSerializer
 from allauth.socialaccount.providers.google.views import GoogleOAuth2Adapter
 from dj_rest_auth.registration.views import SocialLoginView
 from allauth.socialaccount.providers.oauth2.client import OAuth2Client
 from rest_framework.permissions import AllowAny
 from django.db import transaction
+from users.models import UserToken
+from rest_framework_simplejwt.tokens import RefreshToken
 
 
 class RegistrationView(APIView):
@@ -64,11 +66,107 @@ class GoogleLoginView(SocialLoginView):
 
 
 class LogoutView(APIView):
-    permission_classes = [AllowAny]
-
     def post(self, request):
-        serializer = LogoutSerializer(
-            data={"device_id": request.headers.get("deviceId")}
-        )
-        serializer.is_valid()
-            
+        user = request.user
+        device_id = request.headers.get("deviceId", "")
+
+        if not device_id:
+            return Response(
+                {
+                    "message": ["Device id is required"],
+                    "status": status.HTTP_400_BAD_REQUEST,
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        with transaction.atomic():
+            user_tokens = UserToken.objects.filter(
+                user=user, device_id=device_id, is_active=True
+            )
+            for token_data in user_tokens:
+                old_refresh_token = RefreshToken(token_data.refresh_token)
+                old_refresh_token.blacklist()
+                token_data.is_active = False
+
+            UserToken.objects.bulk_update(user_tokens, ["is_active"])
+
+            return Response(
+                {"message": "Logout Successfully", "status": status.HTTP_200_OK},
+                status=status.HTTP_200_OK,
+            )
+
+
+class LogoutAllView(APIView):
+    def post(self, request):
+        user = request.user
+
+        with transaction.atomic():
+            user_tokens = UserToken.objects.filter(user=user, is_active=True)
+
+            for token_data in user_tokens:
+                old_refresh_token = RefreshToken(token_data.refresh_token)
+                old_refresh_token.blacklist()
+                token_data.is_active = False
+
+            UserToken.objects.bulk_update(user_tokens, ["is_active"])
+            return Response(
+                {
+                    "message": "Logout From all devices Successfully",
+                    "status": status.HTTP_200_OK,
+                },
+                status=status.HTTP_200_OK,
+            )
+
+
+class LogoutDeviceView(APIView):
+    def post(self, request):
+        user = request.user
+        user_device_id = request.headers.get("deviceId", "")
+        device_id = request.data.get("device_id", "")
+
+        if not user_device_id:
+            return Response(
+                {
+                    "message": ["User device id is required"],
+                    "status": status.HTTP_400_BAD_REQUEST,
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if not device_id:
+            return Response(
+                {
+                    "message": ["Device id is required"],
+                    "status": status.HTTP_400_BAD_REQUEST,
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        with transaction.atomic():
+            user_tokens = UserToken.objects.filter(
+                user=user, device_id=device_id, is_active=True
+            )
+
+            for token_data in user_tokens:
+                old_refresh_token = RefreshToken(token_data.refresh_token)
+                old_refresh_token.blacklist()
+                token_data.is_active = False
+
+            UserToken.objects.bulk_update(user_tokens, ["is_active"])
+            return Response(
+                {
+                    "message": "Logout From Device Successfully",
+                    "status": status.HTTP_200_OK,
+                },
+                status=status.HTTP_200_OK,
+            )
+
+class ActiveSessionView(APIView):
+    def get(self, request):
+        user = request.user
+        user_tokens = UserToken.objects.filter(user=user, is_active=True)
+        serializer = ActiveSessionSerializer(user_tokens, many=True);
+        return Response({
+            'message': 'Active Sessions Fetched Successfully',
+            'data': serializer.data,
+            'status': status.HTTP_200_OK
+        }, status=status.HTTP_200_OK)

@@ -71,9 +71,10 @@ class UserToken(models.Model):
     device_id = models.CharField(max_length=255, blank=True, null=True)
     device_name = models.CharField(max_length=255, blank=True, null=True)
     location = models.CharField(max_length=255, blank=True, null=True)
-    last_used_at = models.DateTimeField(blank=True, null=True)
+    last_active_at = models.DateTimeField(blank=True, null=True)
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
 class UserSubscription(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="user_subscriptions")

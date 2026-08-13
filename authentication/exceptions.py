@@ -12,14 +12,13 @@ def custom_exception_handler(exc, context):
             # Handle field errors
             for key, value in response.data.items():
                 if isinstance(value, list):
-                    print('hellooos')
                     for error in value:
                         error_str = str(error)
                         if key == "non_field_errors" or not error_str.startswith("This"):
                             errors.append(error_str)
                         else:
                             errors.append(
-                                f"{key.capitalize()} {error_str.removeprefix('This ')}"
+                                f"{key.capitalize().replace('_', ' ')} {error_str.removeprefix('This ')}"
                             )
 
                 else:
@@ -28,7 +27,7 @@ def custom_exception_handler(exc, context):
                         errors.append(value_str)
                     else:
                         errors.append(
-                            f"{key.capitalize()} {value_str.removeprefix('This ')}"
+                            f"{key.capitalize().replace('_', ' ')} {value_str.removeprefix('This ')}"
                         )
 
             response.data = {"message": errors, "status": response.status_code}
