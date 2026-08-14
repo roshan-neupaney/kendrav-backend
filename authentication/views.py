@@ -6,7 +6,9 @@ from .serializers import (
     LoginSerializer,
     ActiveSessionSerializer,
     ChangePasswordSerializer,
-    ChangePasswordOTPSerializer
+    ChangePasswordOTPSerializer,
+    ForgotPasswordSerializer,
+    ResetPasswordSerializer
 )
 from allauth.socialaccount.providers.google.views import GoogleOAuth2Adapter
 from dj_rest_auth.registration.views import SocialLoginView
@@ -15,6 +17,9 @@ from rest_framework.permissions import AllowAny
 from django.db import transaction
 from users.models import UserToken
 from rest_framework_simplejwt.tokens import RefreshToken
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
 
 
 class RegistrationView(APIView):
@@ -204,6 +209,35 @@ class ChangePasswordOTPView(APIView):
             return Response(
                 {
                     "message": "Password Changed Successfully",
+                    "status": status.HTTP_200_OK,
+                },
+                status=status.HTTP_200_OK,
+            )
+        return Response(serializer.error_messages, status=status.HTTP_400_BAD_REQUEST)
+    
+class ForgotPasswordView(APIView):
+    permission_classes=[AllowAny]
+    def post(self, request):
+        serializer = ForgotPasswordSerializer(data=request.data)
+
+        if serializer.is_valid(raise_exception=True):
+            return Response(
+                {
+                    "message": "Reset Link is sent to your email.",
+                    "status": status.HTTP_200_OK,
+                },
+                status=status.HTTP_200_OK,
+            )
+        return Response(serializer.error_messages, status=status.HTTP_400_BAD_REQUEST)
+
+class ResetPasswordView(APIView):
+    permission_classes=[AllowAny]
+    def post(self, request):
+        serializer = ResetPasswordSerializer(data=request.data)
+        if serializer.is_valid(raise_exception=True):
+            return Response(
+                {
+                    "message": "Password reset successfully.",
                     "status": status.HTTP_200_OK,
                 },
                 status=status.HTTP_200_OK,

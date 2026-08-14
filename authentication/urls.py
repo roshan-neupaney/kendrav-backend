@@ -8,7 +8,9 @@ from .views import (
     LogoutDeviceView,
     ActiveSessionView,
     ChangePasswordView,
-    ChangePasswordOTPView
+    ChangePasswordOTPView,
+    ForgotPasswordView,
+    ResetPasswordView
 )
 from rest_framework_simplejwt.views import TokenRefreshView
 
@@ -23,4 +25,6 @@ urlpatterns = [
     path("active-session/", ActiveSessionView.as_view(), name="active-session"),
     path("change-password/", ChangePasswordView.as_view(), name="change-password"),
     path("change-password-otp/", ChangePasswordOTPView.as_view(), name="change-password-otp"),
+    path("forgot-password/", ForgotPasswordView.as_view(), name="forgot-password"),
+    path("reset-password/", ResetPasswordView.as_view(), name="reset-password"),
 ]

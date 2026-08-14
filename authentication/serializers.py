@@ -8,6 +8,9 @@ import random
 from django.core.cache import cache
 from django.core.mail import send_mail
 from django.contrib.auth.hashers import make_password
+import secrets
+from django.conf import settings
+
 
 User = get_user_model()
 
@@ -152,10 +155,10 @@ class ChangePasswordSerializer(serializers.Serializer):
         )
 
         send_mail(
-            'OTP Code',
-            f"{otp}",
-            'noreply@kendrav.com',
-            [f"{user.email}"]
+            subject='OTP Code',
+            message=f"{otp}",
+            from_email='noreply@kendrav.com',
+            recipient_list=[f"{user.email}"]
         )
 
         return {"message": 'Success'}
@@ -191,3 +194,53 @@ class ChangePasswordOTPSerializer(serializers.Serializer):
         cache.delete(f"change_password:{user.id}")
 
         return {"message": 'Password Changed Successfully'}
+    
+class ForgotPasswordSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    def validate(self, attrs):
+        email = attrs.pop('email')
+        
+        try:
+          user = User.objects.get(email=email)
+        except User.DoesNotExist:
+            raise serializers.ValidationError('Invalid Email Address')
+        
+        token = secrets.token_urlsafe(32)
+
+        cache.set(f"reset_token:{token}", user.id, timeout=600)
+
+        frontend_url = settings.FRONTEND_BASE_URL
+
+        reset_link = f"{frontend_url}/forgot-password/?token={token}"
+
+        send_mail(
+            subject='Reset Link',
+            message="Reset link will be expired after 10 mins",
+            from_email='noreply@kendrav.com',
+            recipient_list=[f"{user.email}"],
+            html_message=f'<a href="{reset_link}" style="padding: 10px 20px; background: #2563EB; color: white; text-decoration: none; border-radius: 5px;">Reset Password</a>'
+        )
+        return {
+            "message": "Success"
+        }
+        
+class ResetPasswordSerializer(serializers.Serializer):
+    token = serializers.CharField()
+    new_password = serializers.CharField()
+
+    def validate(self, attrs):
+        user_token = attrs.pop('token')
+        new_password = attrs.pop('new_password')
+
+        user_id = cache.get(f"reset_token:{user_token}", 0)
+
+        if not user_id:
+            raise serializers.ValidationError('Reset link expired')
+        
+        user = User.objects.get(id=user_id)
+        user.set_password(new_password)
+        user.save()
+
+        cache.delete(f"reset_token:{user_token}")
+
+        return {'message': 'Password reset successfully'}
