@@ -4,6 +4,10 @@ from rest_framework import serializers
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.response import Response
 from rest_framework_simplejwt.exceptions import TokenError
+import random
+from django.core.cache import cache
+from django.core.mail import send_mail
+from django.contrib.auth.hashers import make_password
 
 User = get_user_model()
 
@@ -110,8 +114,80 @@ class LoginSerializer(serializers.Serializer):
         )
 
         return {"access_token": access_token, "refresh_token": refresh_token}
-    
+
+
 class ActiveSessionSerializer(serializers.ModelSerializer):
     class Meta:
-        model= UserToken
-        fields= ["id", "user", "device_id", "device_name", "location", "is_active", "last_active_at", "created_at", "updated_at"]
+        model = UserToken
+        fields = [
+            "id",
+            "user",
+            "device_id",
+            "device_name",
+            "location",
+            "is_active",
+            "last_active_at",
+            "created_at",
+            "updated_at",
+        ]
+
+
+class ChangePasswordSerializer(serializers.Serializer):
+    new_password = serializers.CharField(write_only=True)
+    old_password = serializers.CharField(write_only=True)
+
+    def validate(self, attrs):
+        new_password = attrs.pop("new_password")
+        old_password = attrs.pop("old_password")
+        user = self.context.get("user")
+
+        if not user.check_password(old_password):
+            raise serializers.ValidationError("Old Password Is Incorrect")
+
+        otp = str(random.randint(100000, 999999))
+        hashed_password = make_password(new_password)
+
+        cache.set(
+            f"change_password:{user.id}", {"otp": otp, "new_password": hashed_password}, timeout=300
+        )
+
+        send_mail(
+            'OTP Code',
+            f"{otp}",
+            'noreply@kendrav.com',
+            [f"{user.email}"]
+        )
+
+        return {"message": 'Success'}
+
+
+class ChangePasswordOTPSerializer(serializers.Serializer):
+    otp_code = serializers.CharField(write_only=True)
+
+    def validate(self, attrs):
+        otp_code = attrs.pop("otp_code")
+        user = self.context.get("user")
+
+        attempts_key = f'change_password_attempts:{user.id}'
+        attempts = cache.get(attempts_key, 0)
+
+        change_password_data = cache.get(f"change_password:{user.id}", {})
+        otp = change_password_data.get('otp', '')
+        new_password = change_password_data.get('new_password', '')
+
+
+        if not otp:
+            raise serializers.ValidationError('OTP Expired')
+        elif attempts >= 3:
+            cache.delete(f"change_password:{user.id}")
+            cache.delete(attempts_key)
+            raise serializers.ValidationError('Too many attempts. Request new OTP')
+        elif otp != otp_code:
+            cache.set(attempts_key, attempts + 1, timeout=300)
+            raise serializers.ValidationError('Incorrect OTP')
+
+        user.password = new_password
+        user.save()
+        cache.delete(f"change_password:{user.id}")
+
+        return {"message": 'Password Changed Successfully'}

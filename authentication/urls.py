@@ -6,7 +6,9 @@ from .views import (
     LogoutView,
     LogoutAllView,
     LogoutDeviceView,
-    ActiveSessionView
+    ActiveSessionView,
+    ChangePasswordView,
+    ChangePasswordOTPView
 )
 from rest_framework_simplejwt.views import TokenRefreshView
 
@@ -16,7 +18,9 @@ urlpatterns = [
     path("google/", GoogleLoginView.as_view(), name="google_login"),
     path("token-refresh/", TokenRefreshView.as_view(), name="token_refresh"),
     path("logout/", LogoutView.as_view(), name="logout"),
-    path("logout/all-devices/", LogoutAllView.as_view(), name="logout"),
-    path("logout/device/", LogoutDeviceView.as_view(), name="logout"),
-    path("active-session/", ActiveSessionView.as_view(), name="logout"),
+    path("logout/all-devices/", LogoutAllView.as_view(), name="logout-all"),
+    path("logout/device/", LogoutDeviceView.as_view(), name="logout-device"),
+    path("active-session/", ActiveSessionView.as_view(), name="active-session"),
+    path("change-password/", ChangePasswordView.as_view(), name="change-password"),
+    path("change-password-otp/", ChangePasswordOTPView.as_view(), name="change-password-otp"),
 ]

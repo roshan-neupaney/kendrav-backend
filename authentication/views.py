@@ -1,7 +1,13 @@
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from .serializers import RegistrationSerializer, LoginSerializer, ActiveSessionSerializer
+from .serializers import (
+    RegistrationSerializer,
+    LoginSerializer,
+    ActiveSessionSerializer,
+    ChangePasswordSerializer,
+    ChangePasswordOTPSerializer
+)
 from allauth.socialaccount.providers.google.views import GoogleOAuth2Adapter
 from dj_rest_auth.registration.views import SocialLoginView
 from allauth.socialaccount.providers.oauth2.client import OAuth2Client
@@ -160,13 +166,46 @@ class LogoutDeviceView(APIView):
                 status=status.HTTP_200_OK,
             )
 
+
 class ActiveSessionView(APIView):
     def get(self, request):
         user = request.user
         user_tokens = UserToken.objects.filter(user=user, is_active=True)
-        serializer = ActiveSessionSerializer(user_tokens, many=True);
-        return Response({
-            'message': 'Active Sessions Fetched Successfully',
-            'data': serializer.data,
-            'status': status.HTTP_200_OK
-        }, status=status.HTTP_200_OK)
+        serializer = ActiveSessionSerializer(user_tokens, many=True)
+        return Response(
+            {
+                "message": "Active Sessions Fetched Successfully",
+                "data": serializer.data,
+                "status": status.HTTP_200_OK,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+
+class ChangePasswordView(APIView):
+    def post(self, request):
+        user = request.user
+        serializer = ChangePasswordSerializer(data=request.data, context={"user": user})
+        if serializer.is_valid(raise_exception=True):
+            return Response(
+                {
+                    "message": "OTP code is sent to your email",
+                    "status": status.HTTP_200_OK,
+                },
+                status=status.HTTP_200_OK,
+            )
+        return Response(serializer.error_messages, status=status.HTTP_400_BAD_REQUEST)
+
+class ChangePasswordOTPView(APIView):
+    def post(self, request):
+        user = request.user
+        serializer = ChangePasswordOTPSerializer(data=request.data, context={"user": user})
+        if serializer.is_valid(raise_exception=True):
+            return Response(
+                {
+                    "message": "Password Changed Successfully",
+                    "status": status.HTTP_200_OK,
+                },
+                status=status.HTTP_200_OK,
+            )
+        return Response(serializer.error_messages, status=status.HTTP_400_BAD_REQUEST)
