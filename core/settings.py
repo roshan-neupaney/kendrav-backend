@@ -163,12 +163,13 @@ TEMPLATES = [
 ]
 
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'sandbox.smtp.mailtrap.io'
-EMAIL_HOST_USER = 'ad1ccb1496fad2'
-EMAIL_HOST_PASSWORD = '6f74a34a95ed42'
+# EMAIL_HOST = 'sandbox.smtp.mailtrap.io'
+EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_USE_TLS = True
 EMAIL_PORT = 587
-DEFAULT_FROM_EMAIL = 'noreply@kendrav.com'
+EMAIL_HOST_USER = env('EMAIL_HOST_USER')      # your gmail
+EMAIL_HOST_PASSWORD = env('EMAIL_HOST_PASSWORD')  # gmail app password
+DEFAULT_FROM_EMAIL = env('EMAIL_HOST_USER')
 
 WSGI_APPLICATION = "core.wsgi.application"
 

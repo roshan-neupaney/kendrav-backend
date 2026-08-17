@@ -9,6 +9,7 @@ from django.core.mail import send_mail
 from django.contrib.auth.hashers import make_password
 import secrets
 from django.conf import settings
+from .utils import send_otp_email, send_reset_link_email
 
 
 
@@ -161,12 +162,7 @@ class ChangePasswordSerializer(serializers.Serializer):
             f"change_password:{user.id}", {"otp": otp, "new_password": hashed_password}, timeout=300
         )
 
-        send_mail(
-            subject='OTP Code',
-            message=f"{otp}",
-            from_email='noreply@kendrav.com',
-            recipient_list=[f"{user.email}"]
-        )
+        send_otp_email(user.email, otp)
 
         return {"message": 'Success'}
 
@@ -220,13 +216,7 @@ class ForgotPasswordSerializer(serializers.Serializer):
 
         reset_link = f"{frontend_url}/forgot-password/?token={token}"
 
-        send_mail(
-            subject='Reset Link',
-            message="Reset link will be expired after 10 mins",
-            from_email='noreply@kendrav.com',
-            recipient_list=[f"{user.email}"],
-            html_message=f'<a href="{reset_link}" style="padding: 10px 20px; background: #2563EB; color: white; text-decoration: none; border-radius: 5px;">Reset Password</a>'
-        )
+        send_reset_link_email(user.email, reset_link)
         return {
             "message": "Success"
         }
