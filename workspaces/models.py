@@ -29,7 +29,7 @@ class Workspace(models.Model):
     title= models.CharField(max_length=255)
     slug_url= models.SlugField(max_length=255, unique=True)
     owner= models.ForeignKey(User, on_delete=models.CASCADE, related_name="workspaces")
-    type= models.CharField(max_length=20, choices=WorkspaceTypeChoices, default='personal')
+    type= models.CharField(max_length=20, choices=WorkspaceTypeChoices)
     is_active= models.BooleanField(default=True)
     created_at= models.DateTimeField(auto_now_add=True)
     updated_at= models.DateTimeField(auto_now=True)
