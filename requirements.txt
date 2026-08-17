@@ -12,12 +12,15 @@ django-environ==0.13.0
 django-redis==7.0.0
 djangorestframework==3.17.1
 djangorestframework_simplejwt==5.5.1
+google-auth==2.56.3
 gunicorn==26.0.0
 h11==0.16.0
 idna==3.18
 packaging==26.2
 pillow==12.2.0
 psycopg2-binary==2.9.12
+pyasn1==0.6.4
+pyasn1_modules==0.4.2
 pycparser==3.0
 PyJWT==2.13.0
 redis==8.1.0

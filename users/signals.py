@@ -28,7 +28,8 @@ notification_types = [
 def create_user_profile(sender, instance, created, **kwargs):
     if created:
         slug_id = get_random_string(length=6)
-        Profile.objects.create(user=instance)
+        full_name = f"{sender.first_name} {sender.last_name}"
+        Profile.objects.create(user=instance, full_name=full_name)
         Preference.objects.create(user=instance)
         workspace = Workspace.objects.create(owner=instance, slug_url=slugify(f"Personal-{instance.id}-{slug_id}"), title='Personal', type='personal')
         WorkspaceMember.objects.create(user=instance, workspace=workspace)

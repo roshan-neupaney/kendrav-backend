@@ -8,7 +8,7 @@ from .serializers import (
     ChangePasswordSerializer,
     ChangePasswordOTPSerializer,
     ForgotPasswordSerializer,
-    ResetPasswordSerializer
+    ResetPasswordSerializer,
 )
 from allauth.socialaccount.providers.google.views import GoogleOAuth2Adapter
 from dj_rest_auth.registration.views import SocialLoginView
@@ -18,6 +18,9 @@ from django.db import transaction
 from users.models import UserToken
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import get_user_model
+from django.conf import settings
+from google.oauth2 import id_token
+from google.auth.transport import requests as google_requests
 
 User = get_user_model()
 
@@ -68,12 +71,37 @@ class LoginView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class GoogleLoginView(SocialLoginView):
+class GoogleLoginView(APIView):
     permission_classes = [AllowAny]
-    adapter_class = GoogleOAuth2Adapter
-    client_class = OAuth2Client
-    callback_url = "http://localhost:5173/login/google/callback"
-    authentication_classes = []  # ADD — view must be publicly accessible
+    # adapter_class = GoogleOAuth2Adapter
+    # client_class = OAuth2Client
+    # frontend_url = settings.FRONTEND_BASE_URL
+    # callback_url = f"{frontend_url}/login/google/callback"
+    authentication_classes = []
+
+    def post(self, request):
+        token = request.data.get("access_token", "")
+        if not token:
+            return Response(
+                {
+                    "message": ["Access token is required"],
+                    "status": status.HTTP_400_BAD_REQUEST,
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        print(settings.GOOGLE_CLIENT_ID)
+        try:
+            token_info = id_token.verify_oauth2_token(
+                token, google_requests.Request(), settings.GOOGLE_CLIENT_ID
+            )
+            print(token_info)
+        except ValueError as e:
+            print(e)
+            return Response(
+                {"message": ["Invalid Google Token"]},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
 
 class LogoutView(APIView):
@@ -201,10 +229,13 @@ class ChangePasswordView(APIView):
             )
         return Response(serializer.error_messages, status=status.HTTP_400_BAD_REQUEST)
 
+
 class ChangePasswordOTPView(APIView):
     def post(self, request):
         user = request.user
-        serializer = ChangePasswordOTPSerializer(data=request.data, context={"user": user})
+        serializer = ChangePasswordOTPSerializer(
+            data=request.data, context={"user": user}
+        )
         if serializer.is_valid(raise_exception=True):
             return Response(
                 {
@@ -214,9 +245,11 @@ class ChangePasswordOTPView(APIView):
                 status=status.HTTP_200_OK,
             )
         return Response(serializer.error_messages, status=status.HTTP_400_BAD_REQUEST)
-    
+
+
 class ForgotPasswordView(APIView):
-    permission_classes=[AllowAny]
+    permission_classes = [AllowAny]
+
     def post(self, request):
         serializer = ForgotPasswordSerializer(data=request.data)
 
@@ -230,8 +263,10 @@ class ForgotPasswordView(APIView):
             )
         return Response(serializer.error_messages, status=status.HTTP_400_BAD_REQUEST)
 
+
 class ResetPasswordView(APIView):
-    permission_classes=[AllowAny]
+    permission_classes = [AllowAny]
+
     def post(self, request):
         serializer = ResetPasswordSerializer(data=request.data)
         if serializer.is_valid(raise_exception=True):
