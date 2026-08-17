@@ -2,7 +2,6 @@ from users.models import UserToken
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
 from rest_framework_simplejwt.tokens import RefreshToken
-from rest_framework.response import Response
 from rest_framework_simplejwt.exceptions import TokenError
 import random
 from django.core.cache import cache
@@ -10,6 +9,7 @@ from django.core.mail import send_mail
 from django.contrib.auth.hashers import make_password
 import secrets
 from django.conf import settings
+
 
 
 User = get_user_model()
@@ -117,6 +117,13 @@ class LoginSerializer(serializers.Serializer):
         )
 
         return {"access_token": access_token, "refresh_token": refresh_token}
+
+class GoogleLoginSerializer(serializers.Serializer):
+    id_token = serializers.CharField()
+    device_id = serializers.CharField(write_only=True)
+    device_name = serializers.CharField(write_only=True, required=False)
+    location = serializers.CharField(write_only=True, required=False)
+    
 
 
 class ActiveSessionSerializer(serializers.ModelSerializer):
@@ -244,3 +251,6 @@ class ResetPasswordSerializer(serializers.Serializer):
         cache.delete(f"reset_token:{user_token}")
 
         return {'message': 'Password reset successfully'}
+
+class RefreshTokenSerializer(serializers.Serializer):
+    refresh = serializers.CharField()
