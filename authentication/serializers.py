@@ -214,7 +214,7 @@ class ForgotPasswordSerializer(serializers.Serializer):
 
         frontend_url = settings.FRONTEND_BASE_URL
 
-        reset_link = f"{frontend_url}/forgot-password/?token={token}"
+        reset_link = f"{frontend_url}/reset-password/?token={token}"
 
         send_reset_link_email(user.email, reset_link)
         return {
