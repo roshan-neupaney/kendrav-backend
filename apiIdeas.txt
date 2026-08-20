@@ -1,0 +1,121 @@
+                Get All Ideas
+Method   → GET
+Endpoint → /api/v1/workspace/:workspace_id/idea/?cursor=string&limit=10&status=string&sort_by=string&start_date=string&end_date&search=string
+Auth     → private
+Response → {
+    status: number,
+    message: string,
+    data: {
+        results: [{
+            id: number;
+            title: string;
+            description: string;
+            workspace_id: number;
+            created_by: string;
+            is_hidden: boolean;
+            is_active: true;
+            status: string;
+            created_at: string;
+            updated_at: string;
+        }];
+        next_cursor: string;
+        has_more: boolean;
+        limit: number;
+    }
+}
+
+                Get Idea by id
+Method   → GET
+Endpoint → /api/v1/workspace/:workspace_id/idea/:id
+Auth     → private
+Response → {
+    status: number,
+    message: string,
+    data: {
+        id: number;
+        title: string;
+        description: string;
+        workspace_id: number;
+        created_by: string;
+        is_hidden: boolean;
+        is_active: true;
+        status: string;
+        created_at: string;
+        updated_at: string;
+    }
+}
+
+                Create Idea
+Method   → POST
+Endpoint → /api/v1/workspace/:workspace_id/idea
+Auth     → private
+Payload  → {
+        title: string;
+        description: string;
+        is_hidden: boolean;
+        status: string;
+}
+Response → {
+    status: number,
+    message: string,
+    data: {
+        id: number;
+        title: string;
+        description: string;
+        workspace_id: number;
+        is_hidden: boolean;
+        is_active: true;
+        status: string;
+        created_at: string;
+        updated_at: string;
+    }
+}
+
+                Update Idea
+Method   → PATCH
+Endpoint → /api/v1/workspace/:workspace_id/idea/:id
+Auth     → private
+Payload  → {
+        title: string;
+        description: string;
+        is_hidden: boolean;
+        is_active: boolean;
+        status: string;
+}
+Response → {
+    status: number,
+    message: string,
+    data: {
+        id: number;
+        title: string;
+        description: string;
+        workspace_id: number;
+        created_by: string;
+        is_hidden: boolean;
+        is_active: true;
+        status: string;
+        created_at: string;
+        updated_at: string;
+    }
+}
+
+                Delete Idea
+Method   → DELETE
+Endpoint → /api/v1/workspace/:workspace_id/idea/:id
+Auth     → private
+Response → {
+    status: number,
+    message: string
+}
+
+authentication: - 
+users: Profile, Preferences, UserTokens, UserSubscriptions, FCMTokens 
+workspace: Workspaces, WorkspaceMembers, WorkspaceInvites, WorkspaceMemberRoles, WorkspaceMemberPermissions, Roles, Permissions, RolePermissions, MyTimes
+posts: Posts, PostMedia 
+channels: Channels, WorkspaceChannels, ChannelConfigs, ChannelPosts
+notifications: NotificationPreferences, Notifications,  UserNotifications
+payments: PaymentMethods, PaymentHistorys 
+subscriptions: Subscriptions 
+workspace_templates: Templates 
+ideas: Ideas 
+medias: - 

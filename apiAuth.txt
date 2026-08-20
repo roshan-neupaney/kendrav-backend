@@ -1,0 +1,158 @@
+Method   → POST
+Endpoint → /api/v1/auth/register/
+Auth     → public
+Payload  → {
+    email: string;
+    password: string;
+    full_name: string;
+    device_id: string;
+    device_name: string;
+}
+Response → {
+    status: number,
+    message: string,
+    data: {
+        access_token: string,
+        refresh_token: string,
+    }
+}
+
+Method   → POST
+Endpoint → /api/v1/auth/login/
+Auth     → public
+Payload  → {
+    email: string,
+    password: string
+    device_id: string;
+    device_name: string;
+}
+Response → {
+    status: number,
+    message: string,
+    data: {
+        access_token: string,
+        refresh_token: string,
+    }
+}
+
+Method   → POST
+Endpoint → /api/v1/auth/logout/
+Auth     → private
+Response → {
+    status: number,
+    message: string,
+}
+
+Method   → POST
+Endpoint → /api/v1/auth/logout/all-devices
+Auth     → private
+Response → {
+    status: number,
+    message: string,
+}
+
+Method   → POST
+Endpoint → /api/v1/auth/logout/device/
+Auth     → private
+Payload  → {
+    device_id: string,
+}   
+Response → {
+    status: number,
+    message: string,
+}
+
+Method   → GET
+Endpoint → /api/v1/auth/active-session/
+Auth     → private  
+Response → {
+    status: number,
+    message: string,
+    data: [{
+        id: number
+        user_id: number
+        device_id: string
+        device_name: string
+        location: string
+        last_active_at: string
+        is_active: true
+        created_at: string
+        updated_at: string
+    }]
+}
+
+Method   → POST
+Endpoint → /api/v1/auth/google/
+Auth     → public
+Payload  → {
+    access_token: string
+}
+Response → {
+    status: number,
+    message: string,
+    data: {
+        access: string,
+        refresh: string
+    }
+}
+
+Method   → POST
+Endpoint → /api/v1/auth/token-refresh/
+Auth     → public
+Payload  → {
+    refresh: string,
+}
+Response → {
+    status: number,
+    message: string,
+    data: {
+        access_token: string,
+        refresh_token: string,
+    }
+}
+
+Method   → POST
+Endpoint → /api/v1/auth/change-password-otp/
+Auth     → private
+Payload  → {
+    otp_code: string,
+}
+Response → {
+    status: number,
+    message: string,
+}
+
+Method   → POST
+Endpoint → /api/v1/auth/change-password/
+Auth     → private
+Payload  → {
+    old_password: string,
+    new_password: string
+}
+Response → {
+    status: number,
+    message: string,
+}
+
+Method   → POST
+Endpoint → /api/v1/auth/forgot-password/
+Auth     → public
+Payload  → {
+    email: string
+}
+Response → {
+    status: number,
+    message: string,
+}
+
+Method   → POST
+Endpoint → /api/v1/auth/reset-password/
+Auth     → public
+Payload  → {
+    token: string
+    new_password: string
+}
+Response → {
+    status: number,
+    message: string,
+}

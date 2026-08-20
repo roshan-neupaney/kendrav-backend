@@ -1,0 +1,103 @@
+                Get All Template
+Method   → GET
+Endpoint → /api/v1/workspace/:workspace_id/template/?cursor=string&limit=10&sort_by=string&start_date=string&end_date&search=string
+Auth     → private
+Response → {
+    status: number,
+    message: string,
+    data: {
+        results: [{
+            id: number;
+            title: string;
+            description: string;
+            workspace_id: number;
+            created_by: string;
+            is_global: boolean;
+            is_active: true;
+            created_at: string;
+            updated_at: string;
+        }];
+        next_cursor: string;
+        has_more: boolean;
+        limit: number;
+    }
+}
+
+                Get Template by id
+Method   → GET
+Endpoint → /api/v1/workspace/:workspace_id/template/:id
+Auth     → private
+Response → {
+    status: number,
+    message: string,
+    data: {
+        id: number;
+        title: string;
+        description: string;
+        workspace_id: number;
+        created_by: string;
+        is_global: boolean;
+        is_active: true;
+        created_at: string;
+        updated_at: string;
+    }
+}
+
+                Create Template
+Method   → POST
+Endpoint → /api/v1/workspace/:workspace_id/template
+Auth     → private
+Payload  → {
+        title: string;
+        description: string;
+        is_global: boolean;(only superadmin)
+}
+Response → {
+    status: number,
+    message: string,
+    data: {
+        id: number;
+        title: string;
+        description: string;
+        workspace_id: number;
+        is_global: boolean;
+        is_active: true;
+        created_at: string;
+        updated_at: string;
+    }
+}
+
+                Update Template
+Method   → PATCH
+Endpoint → /api/v1/workspace/:workspace_id/template/:id
+Auth     → private
+Payload  → {
+        title: string;
+        description: string;
+        is_global: boolean;
+        is_active: boolean;
+}
+Response → {
+    status: number,
+    message: string,
+    data: {
+        id: number;
+        title: string;
+        description: string;
+        workspace_id: number;
+        created_by: string;
+        is_global: boolean;
+        is_active: true;
+        created_at: string;
+        updated_at: string;
+    }
+}
+
+                Delete Template
+Method   → DELETE
+Endpoint → /api/v1/workspace/:workspace_id/template/:id
+Auth     → private
+Response → {
+    status: number,
+    message: string
+}

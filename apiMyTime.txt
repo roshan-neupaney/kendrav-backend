@@ -1,0 +1,72 @@
+                Get All My Times
+Method   → GET
+Endpoint → /api/v1/workspace/:workspace_id/my-times
+Auth     → private
+Response → {
+    status: number,
+    message: string,
+    data: [{
+        id: number;
+        day: string;
+        time: string;
+        workspace_id: number;
+        is_active: true;
+        created_at: string;
+        updated_at: string;
+    }]
+}
+
+                Create My Time
+Method   → POST
+Endpoint → /api/v1/workspace/:workspace_id/my-times
+Auth     → private
+Payload  → {
+    day: string;
+    time: string;
+    is_active: boolean;
+}
+Response → {
+    status: number,
+    message: string,
+    data: {
+        id: number;
+        day: string;
+        time: string;
+        workspace_id: number;
+        is_active: true;
+        created_at: string;
+        updated_at: string;
+    }
+}
+
+                Update My Time
+Method   → PATCH
+Endpoint → /api/v1/workspace/:workspace_id/my-times/:id
+Auth     → private
+Payload  → {
+    day: string;
+    time: string;
+    is_active: boolean;
+}
+Response → {
+    status: number,
+    message: string,
+    data: {
+        id: number;
+        day: string;
+        time: string;
+        workspace_id: number;
+        is_active: true;
+        created_at: string;
+        updated_at: string;
+    }
+}
+
+                Delete My Time
+Method   → DELETE
+Endpoint → /api/v1/workspace/:workspace_id/my-times/:id
+Auth     → private
+Response → {
+    status: number,
+    message: string,
+}
