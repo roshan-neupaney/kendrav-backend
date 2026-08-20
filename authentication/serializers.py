@@ -10,7 +10,9 @@ from django.contrib.auth.hashers import make_password
 import secrets
 from django.conf import settings
 from .utils import send_otp_email, send_reset_link_email
+import logging
 
+logger = logging.getLogger(__name__)
 
 
 User = get_user_model()
@@ -202,22 +204,22 @@ class ForgotPasswordSerializer(serializers.Serializer):
     email = serializers.EmailField()
     def validate(self, attrs):
         email = attrs.pop('email')
-        print('enter validate method')
+        logger.info('enter validate method')
         try:
           user = User.objects.get(email=email)
         except User.DoesNotExist:
             raise serializers.ValidationError('Invalid Email Address')
         
-        print('user found')
+        logger.info('user found')
         token = secrets.token_urlsafe(32)
 
         cache.set(f"reset_token:{token}", user.id, timeout=600)
-        print('set redis cache')
+        logger.info('set redis cache')
 
         frontend_url = settings.FRONTEND_BASE_URL
-        print(f'frontend url is: {frontend_url}')
+        logger.info(f'frontend url is: {frontend_url}')
         reset_link = f"{frontend_url}/reset-password/?token={token}"
-        print(f'reset link is: {reset_link}')
+        logger.info(f'reset link is: {reset_link}')
 
         send_reset_link_email(user.email, reset_link)
         return {
