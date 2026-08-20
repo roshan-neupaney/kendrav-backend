@@ -1,4 +1,6 @@
 from django.core.mail import send_mail
+
+logger = logging.getLogger(__name__)
 # ✅ HTML email with good formatting
 def send_otp_email(user_email, otp):
     subject = 'Kendrav — Password Change OTP'
@@ -45,10 +47,14 @@ def send_reset_link_email(user_email, reset_link):
         <p style="color: #94a3b8; font-size: 12px;">© 2026 Kendrav. All rights reserved.</p>
     </div>
     """
-    send_mail(
-        subject=subject,
-        message=f"Reset your password: {reset_link}",  # plain text fallback
-        from_email='noreply@kendrav.com',
-        recipient_list=[user_email],
-        html_message=html_message
-    )
+    try:
+        send_mail(
+            subject=subject,
+            message=f"Reset your password: {reset_link}",  # plain text fallback
+            from_email='noreply@kendrav.com',
+            recipient_list=[user_email],
+            html_message=html_message,
+            fail_silently=False
+        )
+    except Exception as e:
+        logger.error(f"Failed to send reset email to {email}: {e}")
