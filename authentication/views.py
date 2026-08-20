@@ -331,9 +331,11 @@ class ForgotPasswordView(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request):
+        print('enter post method')
         serializer = ForgotPasswordSerializer(data=request.data)
 
         if serializer.is_valid(raise_exception=True):
+            print('serializer is valid')
             return Response(
                 {
                     "message": "Reset Link is sent to your email.",

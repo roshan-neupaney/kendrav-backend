@@ -202,19 +202,22 @@ class ForgotPasswordSerializer(serializers.Serializer):
     email = serializers.EmailField()
     def validate(self, attrs):
         email = attrs.pop('email')
-        
+        print('enter validate method')
         try:
           user = User.objects.get(email=email)
         except User.DoesNotExist:
             raise serializers.ValidationError('Invalid Email Address')
         
+        print('user found')
         token = secrets.token_urlsafe(32)
 
         cache.set(f"reset_token:{token}", user.id, timeout=600)
+        print('set redis cache')
 
         frontend_url = settings.FRONTEND_BASE_URL
-
+        print(f'frontend url is: {frontend_url}')
         reset_link = f"{frontend_url}/reset-password/?token={token}"
+        print(f'reset link is: {reset_link}')
 
         send_reset_link_email(user.email, reset_link)
         return {
