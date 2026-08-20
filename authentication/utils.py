@@ -1,4 +1,5 @@
 from django.core.mail import send_mail
+import logging
 
 logger = logging.getLogger(__name__)
 # ✅ HTML email with good formatting
