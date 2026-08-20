@@ -58,4 +58,4 @@ def send_reset_link_email(user_email, reset_link):
             fail_silently=False
         )
     except Exception as e:
-        logger.error(f"Failed to send reset email to {email}: {e}")
+        logger.error(f"Failed to send reset email to {user_email}: {e}")
