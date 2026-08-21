@@ -26,12 +26,12 @@ notification_types = [
 
 @receiver(post_save, sender=User)
 def create_user_profile(sender, instance, created, **kwargs):
-    if created:
+    if created and not instance.is_superuser:
         slug_id = get_random_string(length=6)
-        full_name = f"{sender.first_name} {sender.last_name}"
+        full_name = f"{instance.first_name} {instance.last_name}"
         Profile.objects.create(user=instance, full_name=full_name)
         Preference.objects.create(user=instance)
-        workspace = Workspace.objects.create(owner=instance, slug_url=slugify(f"Personal-{instance.id}-{slug_id}"), title='Personal', type='personal')
+        workspace = Workspace.objects.create(owner=instance, slug_url=slugify(f"Personal-{slug_id}-{instance.id}"), title='Personal', type='personal')
         WorkspaceMember.objects.create(user=instance, workspace=workspace)
         for notification_type, _ in notification_types:
             NotificationPreference.objects.create(user=instance, notification_type=notification_type, is_permitted=True)
