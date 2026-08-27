@@ -7,7 +7,7 @@ from core.permission import HasWorkspacePermission
 
 class UserView(APIView):
     permission_classes=[HasWorkspacePermission('workspace:can_delete')]
-    def get(self, request):
+    def get(self, request, workspace_id):
         user = request.user
         serializer = UserSerializers(user)
         return Response(
