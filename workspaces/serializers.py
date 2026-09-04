@@ -6,6 +6,7 @@ from .utils import generate_workspace_slug
 class WorkspaceSerializer(serializers.ModelSerializer):
     type = serializers.ChoiceField(choices=WorkspaceTypeChoices, required=False)
     slug_url = serializers.SlugField(required=False, read_only=True)
+
     class Meta:
         model = Workspace
         fields = ["id", "title", "slug_url", "type"]
@@ -28,12 +29,16 @@ class WorkspaceSerializer(serializers.ModelSerializer):
 
         return workspace
 
-    def update(self, instance, validated_data):
-        title = validated_data.pop('title', '')
-        workspace = Workspace.objects.update(id=instance.id, title=title)
-        return workspace
 
 class WorkspaceWithIdSerializer(serializers.ModelSerializer):
     class Meta:
         model = Workspace
         fields = ["id", "title", "slug_url", "type"]
+
+    def update(self, instance, validated_data):
+        if "title" in validated_data and validated_data["title"] != instance.title:
+            title = validated_data["title"]
+            instance.title = title
+            instance.slug_url = generate_workspace_slug(title, workspace_id=instance.id)
+        instance.save()
+        return instance

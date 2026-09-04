@@ -5,6 +5,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from .models import Workspace
 from django.db.models import Q
+from rest_framework.permissions import IsAuthenticated
 
 
 class WorkspaceView(APIView):
@@ -46,35 +47,14 @@ class WorkspaceView(APIView):
             status=status.HTTP_400_BAD_REQUEST,
         )
 
-    # permission_classes = [
-    #     IsWorkspaceMember,
-    #     HasWorkspacePermission("workspace:can_update"),
-    # ]
-
-    def patch(self, request, workspace_id):
-        print('hello')
-        workspace = Workspace.objects.filter(id=workspace_id).first()
-        serializer = WorkspaceSerializer(workspace, data=request.data)
-        if serializer.is_valid(raise_exception=True):
-            serializer.save()
-            return Response(
-                {
-                    "status": status.HTTP_200_OK,
-                    "data": serializer.data,
-                    "message": "Workspace Updated Successfully",
-                }
-            )
-        return Response(
-            {
-                "status": status.HTTP_400_BAD_REQUEST,
-                "message": serializer.errors,
-            },
-            status=status.HTTP_400_BAD_REQUEST,
-        )
-
 
 class WorkspaceWithIdView(APIView):
-    permission_classes = [IsWorkspaceMember]
+    def get_permissions(self):
+        if self.request.method == "PATCH":
+            return [IsAuthenticated(), HasWorkspacePermission("workspace:can_update")()]
+        elif self.request.method == "DELETE":
+            return [IsAuthenticated(), HasWorkspacePermission("workspace:can_delete")()]
+        return [IsAuthenticated(), IsWorkspaceMember()]
 
     def get(self, request, workspace_id):
         workspace = Workspace.objects.filter(id=workspace_id).first()
@@ -94,4 +74,44 @@ class WorkspaceWithIdView(APIView):
                 "data": serializer.data,
             },
             status=status.HTTP_200_OK,
+        )
+
+    def patch(self, request, workspace_id):
+        workspace = Workspace.objects.filter(id=workspace_id).first()
+
+        if not workspace:
+            return Response({"message": "Workspace not found"}, status=404)
+
+        serializer = WorkspaceWithIdSerializer(
+            workspace, data=request.data, partial=True
+        )
+        if serializer.is_valid(raise_exception=True):
+            serializer.save()
+            return Response(
+                {
+                    "status": status.HTTP_200_OK,
+                    "data": serializer.data,
+                    "message": "Workspace Updated Successfully",
+                }
+            )
+        return Response(
+            {
+                "status": status.HTTP_400_BAD_REQUEST,
+                "message": serializer.errors,
+            },
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    def delete(self, request, workspace_id):
+        workspace = Workspace.objects.filter(id=workspace_id).first()
+
+        if not workspace:
+            return Response({"message": "Workspace not found"}, status=404)
+        workspace.is_active = False
+        workspace.save()
+        return Response(
+            {
+                "status": status.HTTP_200_OK,
+                "message": "Workspace Deleted Successfully",
+            }
         )
