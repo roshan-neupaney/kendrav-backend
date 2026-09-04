@@ -1,9 +1,13 @@
 from .permission import HasWorkspacePermission, IsWorkspaceMember
 from rest_framework.views import APIView
-from .serializers import WorkspaceSerializer, WorkspaceWithIdSerializer
+from .serializers import (
+    WorkspaceSerializer,
+    WorkspaceWithIdSerializer,
+    WorkspaceMemeberSerializer,
+)
 from rest_framework.response import Response
 from rest_framework import status
-from .models import Workspace
+from .models import Workspace, WorkspaceMember
 from django.db.models import Q
 from rest_framework.permissions import IsAuthenticated
 
@@ -114,4 +118,29 @@ class WorkspaceWithIdView(APIView):
                 "status": status.HTTP_200_OK,
                 "message": "Workspace Deleted Successfully",
             }
+        )
+
+
+class WorkspaceMemeberView(APIView):
+    def get_permissions(self):
+        if self.request.method == "PATCH":
+            return [IsAuthenticated(), HasWorkspacePermission("workspace:can_update")()]
+        elif self.request.method == "DELETE":
+            return [IsAuthenticated(), HasWorkspacePermission("workspace:can_delete")()]
+        return [IsAuthenticated(), IsWorkspaceMember()]
+
+    def get(self, request, workspace_id):
+        workspace_member = WorkspaceMember.objects.prefetch_related('member_roles').filter(
+            is_active=True, workspace=workspace_id
+        )
+
+        serializer = WorkspaceMemeberSerializer(workspace_member, many=True)
+
+        return Response(
+            {
+                "status": status.HTTP_200_OK,
+                "message": "Workspace members retrived successfully",
+                "data": serializer.data,
+            },
+            status=status.HTTP_200_OK,
         )
