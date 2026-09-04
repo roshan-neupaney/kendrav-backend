@@ -5,7 +5,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from .models import Workspace
 from django.db.models import Q
-from .utils import generate_workspace_slug
+
 
 class WorkspaceView(APIView):
     def get(self, request):
@@ -18,28 +18,59 @@ class WorkspaceView(APIView):
         return Response(
             {
                 "status": status.HTTP_200_OK,
-                "message": "Workspaces retrieved successfully",
+                "message": "Workspaces Retrieved Successfully",
                 "data": serializer.data,
             },
             status=status.HTTP_200_OK,
         )
-    
+
     def post(self, request):
-        user = request.user
-        data = request.data
-        data['slug_url'] = generate_workspace_slug(request.data['title'], '')
-        serializer = WorkspaceSerializer(user, data=request.data)
+        serializer = WorkspaceSerializer(
+            data=request.data, context={"request": request}
+        )
         if serializer.is_valid(raise_exception=True):
-            result = serializer.save()
-            print(result)
+            serializer.save()
             return Response(
-                    {
-                        "status": status.HTTP_200_OK,
-                        "message": "Workspace created successfully",
-                        "data": serializer.data,
-                    },
-                    status=status.HTTP_200_OK,
-                )
+                {
+                    "status": status.HTTP_201_CREATED,
+                    "message": "Workspace Created Successfully",
+                    "data": serializer.data,
+                },
+                status=status.HTTP_201_CREATED,
+            )
+        return Response(
+            {
+                "status": status.HTTP_400_BAD_REQUEST,
+                "message": serializer.errors,
+            },
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    # permission_classes = [
+    #     IsWorkspaceMember,
+    #     HasWorkspacePermission("workspace:can_update"),
+    # ]
+
+    def patch(self, request, workspace_id):
+        print('hello')
+        workspace = Workspace.objects.filter(id=workspace_id).first()
+        serializer = WorkspaceSerializer(workspace, data=request.data)
+        if serializer.is_valid(raise_exception=True):
+            serializer.save()
+            return Response(
+                {
+                    "status": status.HTTP_200_OK,
+                    "data": serializer.data,
+                    "message": "Workspace Updated Successfully",
+                }
+            )
+        return Response(
+            {
+                "status": status.HTTP_400_BAD_REQUEST,
+                "message": serializer.errors,
+            },
+            status=status.HTTP_400_BAD_REQUEST,
+        )
 
 
 class WorkspaceWithIdView(APIView):
