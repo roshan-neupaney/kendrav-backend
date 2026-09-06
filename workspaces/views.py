@@ -130,9 +130,9 @@ class WorkspaceMemeberView(APIView):
         return [IsAuthenticated(), IsWorkspaceMember()]
 
     def get(self, request, workspace_id):
-        workspace_member = WorkspaceMember.objects.prefetch_related('member_roles').filter(
-            is_active=True, workspace=workspace_id
-        )
+        workspace_member = WorkspaceMember.objects.prefetch_related(
+            "member_roles__role", "member_permissions__permission", "user__profile"
+        ).filter(is_active=True, workspace=workspace_id)
 
         serializer = WorkspaceMemeberSerializer(workspace_member, many=True)
 

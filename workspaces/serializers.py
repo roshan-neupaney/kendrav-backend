@@ -87,16 +87,18 @@ class WorkspaceMemeberSerializer(serializers.ModelSerializer):
     permissions = serializers.SerializerMethodField()
 
     def get_roles(self, instance):
-        roles = Role.objects.filter(role_members__workspace_member=instance)
+        roles = []
+        member_roles = list(instance.member_roles.all())
+        roles = [item.role for item in member_roles]
+
         return RoleSerializer(roles, many=True).data
 
     def get_permissions(self, instance):
         permissions = []
-        member_roles_id = (
-            instance.member_roles.select_related("role")
-            .all()
-            .values_list("role_id", flat=True)
+        member_roles = list(
+            instance.member_roles.all()
         )
+        member_roles_id = [item.role_id for item in member_roles]
 
         role_permissions = RolePermission.objects.select_related("permission").filter(
             role_id__in=member_roles_id
@@ -105,10 +107,7 @@ class WorkspaceMemeberSerializer(serializers.ModelSerializer):
         for item in role_permissions:
             permissions.append(item.permission)
 
-        member_permissions = instance.member_permissions.select_related(
-            "permission"
-        ).all()
-        member_permissions = list(member_permissions)
+        member_permissions = list(instance.member_permissions.all())
 
         permission_ids = [p.id for p in permissions]
         for item in member_permissions:
@@ -127,4 +126,12 @@ class WorkspaceMemeberSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = WorkspaceMember
-        fields = ["id", "user", "is_active", "roles", "permissions"]
+        fields = [
+            "id",
+            "user",
+            "is_active",
+            "roles",
+            "permissions",
+            "created_at",
+            "updated_at",
+        ]
