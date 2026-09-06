@@ -6,6 +6,7 @@ from .models import (
     Role,
     RolePermission,
     Permission,
+    WorkspaceMemberInvite
 )
 from rest_framework import serializers
 from .utils import generate_workspace_slug
@@ -135,3 +136,9 @@ class WorkspaceMemeberSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
         ]
+
+
+class WorkspaceMemberInviteSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = WorkspaceMemberInvite
+        fields = ['id', 'email', 'role', 'status', 'expires_at', 'created_at', 'updated_at', 'invited_by']

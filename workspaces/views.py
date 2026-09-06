@@ -4,6 +4,7 @@ from .serializers import (
     WorkspaceSerializer,
     WorkspaceWithIdSerializer,
     WorkspaceMemeberSerializer,
+    WorkspaceMemberInviteSerializer,
 )
 from rest_framework.response import Response
 from rest_framework import status
@@ -143,4 +144,25 @@ class WorkspaceMemeberView(APIView):
                 "data": serializer.data,
             },
             status=status.HTTP_200_OK,
+        )
+
+class WorkspaceMemberInviteView(APIView):
+    def post(self, request, workspace_id):
+        serializer = WorkspaceMemberInviteSerializer(data=request.data, context={'workspace_id': workspace_id})
+        if serializer.is_valid(raise_exception=True):
+            serializer.save()
+            return Response(
+                {
+                    "status": status.HTTP_201_CREATED,
+                    "message": "Invitation Sent Successfully",
+                    "data": serializer.data,
+                },
+                status=status.HTTP_201_CREATED,
+            )
+        return Response(
+            {
+                "status": status.HTTP_400_BAD_REQUEST,
+                "message": serializer.errors,
+            },
+            status=status.HTTP_400_BAD_REQUEST,
         )
