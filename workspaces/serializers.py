@@ -6,6 +6,7 @@ from .models import (
     RolePermission,
     Permission,
     WorkspaceMemberInvite,
+    WorkspaceMemberRole,
 )
 from rest_framework import serializers
 from .utils import generate_workspace_slug, send_invite_email
@@ -13,7 +14,6 @@ from django.contrib.auth import get_user_model
 from users.serializers import ProfileSerializer
 from datetime import datetime, timedelta, timezone
 import secrets
-from django.core.cache import cache
 from django.conf import settings
 
 User = get_user_model()
@@ -179,8 +179,7 @@ class WorkspaceMemberInviteSerializer(serializers.ModelSerializer):
         )
 
         frontend_url = settings.FRONTEND_BASE_URL
-        invite_link = f"{frontend_url}/{workspace.slug_url}/invitation/?token={token}"
-        print(full_name, workspace_title, role_title, invite_link, expires_at, email)
+        invite_link = f"{frontend_url}/invitation/?token={token}"
         send_invite_email(
             inviter_name=full_name,
             workspace_title=workspace_title,
@@ -191,3 +190,53 @@ class WorkspaceMemberInviteSerializer(serializers.ModelSerializer):
         )
 
         return member_invite
+
+
+class MemberInviteAcceptSerializer(serializers.Serializer):
+    token = serializers.CharField(write_only=True)
+
+    def validate(self, attrs):
+        token = attrs.get("token", "")
+        user = self.context.get("user", "")
+        member_invite = WorkspaceMemberInvite.objects.filter(token=token).first()
+
+        if (
+            member_invite is None
+            or member_invite.status == "accepted"
+            or member_invite.status == "declined"
+        ):
+            raise serializers.ValidationError("Invitation does not exists")
+
+        if member_invite.email != user.email:
+            raise serializers.ValidationError("Unauthorized Request")
+
+        if member_invite.status == "expired":
+            raise serializers.ValidationError("Invitation has expired")
+
+        now = datetime.now(timezone.utc)
+        expires_at = member_invite.expires_at
+        if now > expires_at:
+            member_invite.status = "expired"
+            member_invite.save()
+            raise serializers.ValidationError("Invitation has expired")
+
+        return {"member_invite": member_invite}
+
+    def create(self, validated_data):
+        member_invite = validated_data.get("member_invite")
+        user = self.context.get("user")
+
+        workspace = member_invite.workspace
+        role = member_invite.role
+
+        workspace_member, _created = WorkspaceMember.objects.get_or_create(
+            user=user, workspace_id=workspace.id
+        )
+        WorkspaceMemberRole.objects.get_or_create(
+            workspace_member=workspace_member, role=role
+        )
+
+        member_invite.status = "accepted"
+        member_invite.save()
+
+        return workspace_member

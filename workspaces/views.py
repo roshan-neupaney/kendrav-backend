@@ -5,12 +5,14 @@ from .serializers import (
     WorkspaceWithIdSerializer,
     WorkspaceMemeberSerializer,
     WorkspaceMemberInviteSerializer,
+    MemberInviteAcceptSerializer,
 )
 from rest_framework.response import Response
 from rest_framework import status
 from .models import Workspace, WorkspaceMember
 from django.db.models import Q
 from rest_framework.permissions import IsAuthenticated
+from django.db import transaction
 
 
 class WorkspaceView(APIView):
@@ -171,6 +173,32 @@ class WorkspaceMemberInviteView(APIView):
                 },
                 status=status.HTTP_201_CREATED,
             )
+        return Response(
+            {
+                "status": status.HTTP_400_BAD_REQUEST,
+                "message": serializer.errors,
+            },
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+
+class MemberInviteAcceptView(APIView):
+    def post(self, request):
+        serializer = MemberInviteAcceptSerializer(
+            data=request.data, context={"user": request.user}
+        )
+
+        if serializer.is_valid(raise_exception=True):
+            with transaction.atomic():
+                serializer.save()
+                return Response(
+                    {
+                        "status": status.HTTP_200_OK,
+                        "message": "Invitation Accepted",
+                        # "data": serializer['data'],
+                    },
+                    status=status.HTTP_200_OK,
+                )
         return Response(
             {
                 "status": status.HTTP_400_BAD_REQUEST,
