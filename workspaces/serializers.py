@@ -2,16 +2,19 @@ from .models import (
     Workspace,
     WorkspaceTypeChoices,
     WorkspaceMember,
-    WorkspaceMemberRole,
     Role,
     RolePermission,
     Permission,
-    WorkspaceMemberInvite
+    WorkspaceMemberInvite,
 )
 from rest_framework import serializers
-from .utils import generate_workspace_slug
+from .utils import generate_workspace_slug, send_invite_email
 from django.contrib.auth import get_user_model
 from users.serializers import ProfileSerializer
+from datetime import datetime, timedelta, timezone
+import secrets
+from django.core.cache import cache
+from django.conf import settings
 
 User = get_user_model()
 
@@ -96,9 +99,7 @@ class WorkspaceMemeberSerializer(serializers.ModelSerializer):
 
     def get_permissions(self, instance):
         permissions = []
-        member_roles = list(
-            instance.member_roles.all()
-        )
+        member_roles = list(instance.member_roles.all())
         member_roles_id = [item.role_id for item in member_roles]
 
         role_permissions = RolePermission.objects.select_related("permission").filter(
@@ -139,6 +140,54 @@ class WorkspaceMemeberSerializer(serializers.ModelSerializer):
 
 
 class WorkspaceMemberInviteSerializer(serializers.ModelSerializer):
+    role = serializers.PrimaryKeyRelatedField(queryset=Role.objects.all())
+    expires_at = serializers.DateTimeField(required=False)
+    invited_by = serializers.CharField(required=False)
+
     class Meta:
         model = WorkspaceMemberInvite
-        fields = ['id', 'email', 'role', 'status', 'expires_at', 'created_at', 'updated_at', 'invited_by']
+        fields = [
+            "id",
+            "email",
+            "role",
+            "status",
+            "expires_at",
+            "created_at",
+            "updated_at",
+            "invited_by",
+        ]
+
+    def create(self, validated_data):
+        now = datetime.now(timezone.utc)
+        workspace = self.context.get("workspace")
+        user = self.context.get("user", "")
+        full_name = user.profile.full_name
+        workspace_title = workspace.title
+
+        role = validated_data.get("role", "")
+        role_title = role.title
+        expires_at = now + timedelta(days=3)
+        email = validated_data.get("email", "")
+
+        validated_data["invited_by"] = user
+        validated_data["expires_at"] = expires_at
+
+        token = secrets.token_urlsafe(32)
+
+        member_invite = WorkspaceMemberInvite.objects.create(
+            **validated_data, workspace=workspace, token=token
+        )
+
+        frontend_url = settings.FRONTEND_BASE_URL
+        invite_link = f"{frontend_url}/{workspace.slug_url}/invitation/?token={token}"
+        print(full_name, workspace_title, role_title, invite_link, expires_at, email)
+        send_invite_email(
+            inviter_name=full_name,
+            workspace_title=workspace_title,
+            role_title=role_title,
+            invite_link=invite_link,
+            expires_at=expires_at,
+            recipient_email=email,
+        )
+
+        return member_invite

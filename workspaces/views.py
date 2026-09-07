@@ -146,9 +146,21 @@ class WorkspaceMemeberView(APIView):
             status=status.HTTP_200_OK,
         )
 
+
 class WorkspaceMemberInviteView(APIView):
+    permission_classes = [
+        IsAuthenticated,
+        HasWorkspacePermission("workspace:can_invite_members"),
+    ]
+
     def post(self, request, workspace_id):
-        serializer = WorkspaceMemberInviteSerializer(data=request.data, context={'workspace_id': workspace_id})
+        workspace = Workspace.objects.filter(id=workspace_id).first()
+        if not workspace:
+            return Response({"message": "Workspace not found"}, status=404)
+
+        serializer = WorkspaceMemberInviteSerializer(
+            data=request.data, context={"workspace": workspace, "user": request.user}
+        )
         if serializer.is_valid(raise_exception=True):
             serializer.save()
             return Response(
