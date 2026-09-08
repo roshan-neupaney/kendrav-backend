@@ -134,13 +134,9 @@ class WorkspaceWithIdView(APIView):
 class WorkspaceMemeberView(APIView):
     def get_permissions(self):
         permissions = {
-            "DELETE": [
-                IsAuthenticated(),
-                HasWorkspacePermission("workspace:can_delete_members")(),
-            ],
             "GET": [IsAuthenticated(), IsWorkspaceMember()],
         }
-        return permissions[self.request.method]
+        return permissions.get(self.request.method, [IsAuthenticated(), IsWorkspaceMember()])
 
     def get(self, request):
         workspace_id = request.header.get("workspaceId", "")
@@ -169,7 +165,7 @@ class WorkspaceMemberInviteView(APIView):
             ],
             "GET": [IsAuthenticated()],
         }
-        return permissions[self.request.method]
+        return permissions.get(self.request.method, [IsAuthenticated(), IsWorkspaceMember()])
 
     def post(self, request):
         serializer = WorkspaceMemberInviteSerializer(
@@ -251,8 +247,8 @@ class MemberInviteDeclineView(APIView):
         )
 
         if serializer.is_valid(raise_exception=True):
-            member_invite = serializer.validated_data['member_invite']
-            member_invite.status = 'declined'
+            member_invite = serializer.validated_data["member_invite"]
+            member_invite.status = "declined"
             member_invite.save()
             return Response(
                 {
@@ -267,4 +263,39 @@ class MemberInviteDeclineView(APIView):
                 "message": serializer.errors,
             },
             status=status.HTTP_400_BAD_REQUEST,
+        )
+
+
+class WorkspaceMemberWithIdView(APIView):
+    def get_permissions(self):
+        permissions = {
+            "DELETE": [
+                IsAuthenticated(),
+                HasWorkspacePermission("workspace:can_delete_members")(),
+            ],
+        }
+        return permissions.get(self.request.method, [IsAuthenticated(), IsWorkspaceMember()])
+
+    def delete(self, request, member_id):
+        
+        member = WorkspaceMember.objects.filter(id=member_id).first()
+
+        if member is None:
+            return Response(
+                {
+                    "message": "Member not found",
+                    "status": status.HTTP_400_BAD_REQUEST,
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        member.is_active = False
+        member.save()
+
+        return Response(
+            {
+                "message": "Member Removed Successfully",
+                "status": status.HTTP_200_OK,
+            },
+            status=status.HTTP_200_OK,
         )

@@ -166,7 +166,7 @@ Response → {
 }
 
 Method   → DELETE
-Endpoint → /api/v1/workspace/:workspace_id/member/:id
+Endpoint → /api/v1/workspace/member/:id
 Auth     → private
 Response → {
     status: number,
@@ -174,7 +174,7 @@ Response → {
 }
 
 Method   → GET
-Endpoint → /api/v1/workspace/:workspace_id/roles/
+Endpoint → /api/v1/workspace/roles/
 Auth     → private
 Response → {
     status: number,
@@ -190,7 +190,7 @@ Response → {
 }
 
 Method   → POST
-Endpoint → /api/v1/workspace/:workspace_id/roles/
+Endpoint → /api/v1/workspace/roles/
 Auth     → private
 Payload  → {
     title: string;
@@ -209,7 +209,7 @@ Response → {
 }
 
 Method   → PATCH
-Endpoint → /api/v1/workspace/:workspace_id/roles/:id
+Endpoint → /api/v1/workspace/roles/:id
 Auth     → private
 Payload  → {
     title: string;
@@ -228,7 +228,7 @@ Response → {
 }
 
 Method   → DELETE
-Endpoint → /api/v1/workspace/:workspace_id/roles/:id
+Endpoint → /api/v1/workspace/roles/:id
 Auth     → private
 Response → {
     status: number,
@@ -236,7 +236,7 @@ Response → {
 }
 
 Method   → PATCH
-Endpoint → /api/v1/workspace/:workspace_id/member/:id/roles
+Endpoint → /api/v1/workspace/member/:id/roles
 Auth     → private
 Payload  → {
     role_id: number;
@@ -269,7 +269,7 @@ Response → {
 }
 
 Method   → PATCH
-Endpoint → /api/v1/workspace/:workspace_id/member/:id/permission
+Endpoint → /api/v1/workspace/member/:id/permission
 Auth     → private
 Payload  → {
     permission_id: number;
@@ -289,7 +289,7 @@ Response → {
 }
 
 Method   → POST
-Endpoint → /api/v1/workspace/:workspace_id/roles/:role_id/permissions/
+Endpoint → /api/v1/workspace/roles/:role_id/permissions/
 Auth     → private
 Payload  → {
     permission_id: number;
@@ -307,7 +307,7 @@ Response → {
 }
 
 Method   → DELETE
-Endpoint → /api/v1/workspace/:workspace_id/roles/:role_id/permissions/:permission_id
+Endpoint → /api/v1/workspace/roles/:role_id/permissions/:permission_id
 Auth     → private
 Response → {
     status: number,
@@ -315,7 +315,7 @@ Response → {
 }
 
 Method   → POST
-Endpoint → /api/v1/workspace/:workspace_id/leave
+Endpoint → /api/v1/workspace/leave
 Auth     → private
 Response → {
     status: number,

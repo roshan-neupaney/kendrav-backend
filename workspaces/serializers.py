@@ -243,6 +243,7 @@ class MemberInviteAcceptSerializer(serializers.Serializer):
             workspace_member=workspace_member, role=role
         )
 
+        workspace_member.is_active = True
         member_invite.status = "accepted"
         member_invite.save()
 
