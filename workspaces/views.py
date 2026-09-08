@@ -6,7 +6,6 @@ from .serializers import (
     WorkspaceMemeberSerializer,
     WorkspaceMemberInviteSerializer,
     MemberInviteAcceptSerializer,
-    MemberInviteDeclineSerializer,
 )
 from rest_framework.response import Response
 from rest_framework import status
@@ -58,11 +57,18 @@ class WorkspaceView(APIView):
 
 class WorkspaceWithIdView(APIView):
     def get_permissions(self):
-        if self.request.method == "PATCH":
-            return [IsAuthenticated(), HasWorkspacePermission("workspace:can_update")()]
-        elif self.request.method == "DELETE":
-            return [IsAuthenticated(), HasWorkspacePermission("workspace:can_delete")()]
-        return [IsAuthenticated(), IsWorkspaceMember()]
+        permissions = {
+            "PATCH": [
+                IsAuthenticated(),
+                HasWorkspacePermission("workspace:can_update")(),
+            ],
+            "DELETE": [
+                IsAuthenticated(),
+                HasWorkspacePermission("workspace:can_delete")(),
+            ],
+            "GET": [IsAuthenticated(), IsWorkspaceMember()],
+        }
+        return permissions[self.request.method]
 
     def get(self, request, workspace_id):
         workspace = Workspace.objects.filter(id=workspace_id).first()
@@ -127,13 +133,17 @@ class WorkspaceWithIdView(APIView):
 
 class WorkspaceMemeberView(APIView):
     def get_permissions(self):
-        if self.request.method == "PATCH":
-            return [IsAuthenticated(), HasWorkspacePermission("workspace:can_update")()]
-        elif self.request.method == "DELETE":
-            return [IsAuthenticated(), HasWorkspacePermission("workspace:can_delete")()]
-        return [IsAuthenticated(), IsWorkspaceMember()]
+        permissions = {
+            "DELETE": [
+                IsAuthenticated(),
+                HasWorkspacePermission("workspace:can_delete_members")(),
+            ],
+            "GET": [IsAuthenticated(), IsWorkspaceMember()],
+        }
+        return permissions[self.request.method]
 
-    def get(self, request, workspace_id):
+    def get(self, request):
+        workspace_id = request.header.get("workspaceId", "")
         workspace_member = WorkspaceMember.objects.prefetch_related(
             "member_roles__role", "member_permissions__permission", "user__profile"
         ).filter(is_active=True, workspace=workspace_id)
@@ -184,7 +194,7 @@ class WorkspaceMemberInviteView(APIView):
         )
 
     def get(self, request):
-        token = request.headers.get('token', '')
+        token = request.headers.get("token", "")
         if not token:
             return Response(
                 {
@@ -236,19 +246,21 @@ class MemberInviteAcceptView(APIView):
 
 class MemberInviteDeclineView(APIView):
     def post(self, request):
-        serializer = MemberInviteDeclineSerializer(
+        serializer = MemberInviteAcceptSerializer(
             data=request.data, context={"user": request.user}
         )
 
         if serializer.is_valid(raise_exception=True):
-            with transaction.atomic():
-                return Response(
-                    {
-                        "status": status.HTTP_200_OK,
-                        "message": "Invitation Declined",
-                    },
-                    status=status.HTTP_200_OK,
-                )
+            member_invite = serializer.validated_data['member_invite']
+            member_invite.status = 'declined'
+            member_invite.save()
+            return Response(
+                {
+                    "status": status.HTTP_200_OK,
+                    "message": "Invitation Declined",
+                },
+                status=status.HTTP_200_OK,
+            )
         return Response(
             {
                 "status": status.HTTP_400_BAD_REQUEST,
