@@ -240,3 +240,36 @@ class MemberInviteAcceptSerializer(serializers.Serializer):
         member_invite.save()
 
         return workspace_member
+    
+class MemberInviteDeclineSerializer(serializers.Serializer):
+    token = serializers.CharField(write_only=True)
+
+    def validate(self, attrs):
+        token = attrs.get("token", "")
+        user = self.context.get("user", "")
+        member_invite = WorkspaceMemberInvite.objects.filter(token=token).first()
+
+        if (
+            member_invite is None
+            or member_invite.status == "accepted"
+            or member_invite.status == "declined"
+        ):
+            raise serializers.ValidationError("Invitation does not exists")
+
+        if member_invite.email != user.email:
+            raise serializers.ValidationError("Unauthorized Request")
+
+        if member_invite.status == "expired":
+            raise serializers.ValidationError("Invitation has expired")
+
+        now = datetime.now(timezone.utc)
+        expires_at = member_invite.expires_at
+        if now > expires_at:
+            member_invite.status = "expired"
+            member_invite.save()
+            raise serializers.ValidationError("Invitation has expired")
+        
+        member_invite.status = "declined"
+        member_invite.save()
+
+        return {"member_invite": member_invite}

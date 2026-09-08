@@ -6,6 +6,7 @@ from .serializers import (
     WorkspaceMemeberSerializer,
     WorkspaceMemberInviteSerializer,
     MemberInviteAcceptSerializer,
+    MemberInviteDeclineSerializer
 )
 from rest_framework.response import Response
 from rest_framework import status
@@ -195,7 +196,30 @@ class MemberInviteAcceptView(APIView):
                     {
                         "status": status.HTTP_200_OK,
                         "message": "Invitation Accepted",
-                        # "data": serializer['data'],
+                    },
+                    status=status.HTTP_200_OK,
+                )
+        return Response(
+            {
+                "status": status.HTTP_400_BAD_REQUEST,
+                "message": serializer.errors,
+            },
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+class MemberInviteDeclineView(APIView):
+    def post(self, request):
+        serializer = MemberInviteDeclineSerializer(
+            data=request.data, context={"user": request.user}
+        )
+
+        if serializer.is_valid(raise_exception=True):
+            with transaction.atomic():
+                # serializer.save()
+                return Response(
+                    {
+                        "status": status.HTTP_200_OK,
+                        "message": "Invitation Declined",
                     },
                     status=status.HTTP_200_OK,
                 )
