@@ -19,7 +19,9 @@ class WorkspaceView(APIView):
     def get(self, request):
         user = request.user
         user_workspaces = Workspace.objects.filter(
-            Q(owner=user) | Q(workspace_members__user_id=user), is_active=True
+            Q(owner=user) | Q(workspace_members__user_id=user),
+            workspace_members__is_active=True,
+            is_active=True,
         ).distinct()
 
         serializer = WorkspaceSerializer(user_workspaces, many=True)
@@ -136,7 +138,9 @@ class WorkspaceMemeberView(APIView):
         permissions = {
             "GET": [IsAuthenticated(), IsWorkspaceMember()],
         }
-        return permissions.get(self.request.method, [IsAuthenticated(), IsWorkspaceMember()])
+        return permissions.get(
+            self.request.method, [IsAuthenticated(), IsWorkspaceMember()]
+        )
 
     def get(self, request):
         workspace_id = request.header.get("workspaceId", "")
@@ -165,7 +169,9 @@ class WorkspaceMemberInviteView(APIView):
             ],
             "GET": [IsAuthenticated()],
         }
-        return permissions.get(self.request.method, [IsAuthenticated(), IsWorkspaceMember()])
+        return permissions.get(
+            self.request.method, [IsAuthenticated(), IsWorkspaceMember()]
+        )
 
     def post(self, request):
         serializer = WorkspaceMemberInviteSerializer(
@@ -274,10 +280,12 @@ class WorkspaceMemberWithIdView(APIView):
                 HasWorkspacePermission("workspace:can_delete_members")(),
             ],
         }
-        return permissions.get(self.request.method, [IsAuthenticated(), IsWorkspaceMember()])
+        return permissions.get(
+            self.request.method, [IsAuthenticated(), IsWorkspaceMember()]
+        )
 
     def delete(self, request, member_id):
-        
+
         member = WorkspaceMember.objects.filter(id=member_id).first()
 
         if member is None:
