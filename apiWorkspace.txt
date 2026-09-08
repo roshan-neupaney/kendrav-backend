@@ -16,7 +16,7 @@ Response → {
 }
 
 Method   → GET
-Endpoint → /api/v1/workspace/:workspace_id/
+Endpoint → /api/v1/workspace/
 Auth     → private  
 Response → {
     status: number,
@@ -53,7 +53,7 @@ Response → {
 }
 
 Method   → PATCH
-Endpoint → /api/v1/workspace/:workspace_id
+Endpoint → /api/v1/workspace/
 Auth     → private
 Payload  → {
     title?: string;
@@ -73,7 +73,7 @@ Response → {
 }
 
 Method   → DELETE
-Endpoint → /api/v1/workspace/:workspace_id
+Endpoint → /api/v1/workspace/
 Auth     → private
 Response → {
     status: number,
@@ -81,7 +81,7 @@ Response → {
 }
 
 Method   → GET
-Endpoint → /api/v1/workspace/:workspace_id/members
+Endpoint → /api/v1/workspace/members
 Auth     → private
 Response → {
     status: number,
@@ -99,7 +99,7 @@ Response → {
 }
 
 Method   → POST
-Endpoint → /api/v1/workspace/:workspace_id/member/invite
+Endpoint → /api/v1/workspace/member/invite
 Auth     → private
 Payload  → {
     email: string;

@@ -143,6 +143,7 @@ class WorkspaceMemberInviteSerializer(serializers.ModelSerializer):
     role = serializers.PrimaryKeyRelatedField(queryset=Role.objects.all())
     expires_at = serializers.DateTimeField(required=False)
     invited_by = serializers.CharField(required=False)
+    workspace_id = serializers.IntegerField(write_only=True)
 
     class Meta:
         model = WorkspaceMemberInvite
@@ -151,6 +152,7 @@ class WorkspaceMemberInviteSerializer(serializers.ModelSerializer):
             "email",
             "role",
             "status",
+            "workspace_id",
             "expires_at",
             "created_at",
             "updated_at",
@@ -159,18 +161,23 @@ class WorkspaceMemberInviteSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         now = datetime.now(timezone.utc)
-        workspace = self.context.get("workspace")
+        expires_at = now + timedelta(days=3)
         user = self.context.get("user", "")
+
+        validated_data["invited_by"] = user
+        validated_data["expires_at"] = expires_at
+        workspace_id = validated_data.get('workspace_id', '')
+
+        workspace = Workspace.objects.filter(id=workspace_id).first()
+        if not workspace:
+            return serializers.ValidationError("Workspace not found")
+
         full_name = user.profile.full_name
         workspace_title = workspace.title
 
         role = validated_data.get("role", "")
         role_title = role.title
-        expires_at = now + timedelta(days=3)
         email = validated_data.get("email", "")
-
-        validated_data["invited_by"] = user
-        validated_data["expires_at"] = expires_at
 
         token = secrets.token_urlsafe(32)
 

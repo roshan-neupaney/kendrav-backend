@@ -6,11 +6,11 @@ from .serializers import (
     WorkspaceMemeberSerializer,
     WorkspaceMemberInviteSerializer,
     MemberInviteAcceptSerializer,
-    MemberInviteDeclineSerializer
+    MemberInviteDeclineSerializer,
 )
 from rest_framework.response import Response
 from rest_framework import status
-from .models import Workspace, WorkspaceMember
+from .models import Workspace, WorkspaceMember, WorkspaceMemberInvite
 from django.db.models import Q
 from rest_framework.permissions import IsAuthenticated
 from django.db import transaction
@@ -151,18 +151,19 @@ class WorkspaceMemeberView(APIView):
 
 
 class WorkspaceMemberInviteView(APIView):
-    permission_classes = [
-        IsAuthenticated,
-        HasWorkspacePermission("workspace:can_invite_members"),
-    ]
+    def get_permissions(self):
+        permissions = {
+            "POST": [
+                IsAuthenticated(),
+                HasWorkspacePermission("workspace:can_invite_members")(),
+            ],
+            "GET": [IsAuthenticated()],
+        }
+        return permissions[self.request.method]
 
-    def post(self, request, workspace_id):
-        workspace = Workspace.objects.filter(id=workspace_id).first()
-        if not workspace:
-            return Response({"message": "Workspace not found"}, status=404)
-
+    def post(self, request):
         serializer = WorkspaceMemberInviteSerializer(
-            data=request.data, context={"workspace": workspace, "user": request.user}
+            data=request.data, context={"user": request.user}
         )
         if serializer.is_valid(raise_exception=True):
             serializer.save()
@@ -180,6 +181,31 @@ class WorkspaceMemberInviteView(APIView):
                 "message": serializer.errors,
             },
             status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    def get(self, request):
+        token = request.headers.get('token', '')
+        if not token:
+            return Response(
+                {
+                    "status": status.HTTP_400_BAD_REQUEST,
+                    "message": ["Token is required"],
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        invite = WorkspaceMemberInvite.objects.filter(token=token).first()
+        if not invite:
+            return Response({"message": "Invitation not found"}, status=404)
+
+        serializer = WorkspaceMemberInviteSerializer(invite)
+        return Response(
+            {
+                "status": status.HTTP_200_OK,
+                "message": "Invitation retrieved successfully",
+                "data": serializer.data,
+            },
+            status=status.HTTP_200_OK,
         )
 
 
@@ -207,6 +233,7 @@ class MemberInviteAcceptView(APIView):
             status=status.HTTP_400_BAD_REQUEST,
         )
 
+
 class MemberInviteDeclineView(APIView):
     def post(self, request):
         serializer = MemberInviteDeclineSerializer(
@@ -215,7 +242,6 @@ class MemberInviteDeclineView(APIView):
 
         if serializer.is_valid(raise_exception=True):
             with transaction.atomic():
-                # serializer.save()
                 return Response(
                     {
                         "status": status.HTTP_200_OK,
