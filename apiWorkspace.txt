@@ -173,6 +173,14 @@ Response → {
     message: string,
 }
 
+Method   → POST
+Endpoint → /api/v1/workspace/member/leave
+Auth     → private
+Response → {
+    status: number,
+    message: string,
+}
+
 Method   → GET
 Endpoint → /api/v1/workspace/roles/
 Auth     → private
@@ -312,14 +320,6 @@ Auth     → private
 Response → {
     status: number,
     message: string
-}
-
-Method   → POST
-Endpoint → /api/v1/workspace/leave
-Auth     → private
-Response → {
-    status: number,
-    message: string,
 }
 
 "workspace:can_update",

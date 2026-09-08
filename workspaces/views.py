@@ -143,6 +143,7 @@ class WorkspaceMemeberView(APIView):
         )
 
     def get(self, request):
+        print('hello')
         workspace_id = request.header.get("workspaceId", "")
         workspace_member = WorkspaceMember.objects.prefetch_related(
             "member_roles__role", "member_permissions__permission", "user__profile"
@@ -303,6 +304,47 @@ class WorkspaceMemberWithIdView(APIView):
         return Response(
             {
                 "message": "Member Removed Successfully",
+                "status": status.HTTP_200_OK,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+
+class WorkspaceMemberLeaveView(APIView):
+    permission_classes = [IsWorkspaceMember]
+    def post(self, request):
+        workspace_id = request.headers.get("workspaceId", "")
+        
+        workspace_members = WorkspaceMember.objects.select_related("workspace").filter(
+            is_active=True, workspace=workspace_id
+        )
+
+        member_list = list(workspace_members.all())
+        member = {}
+        is_owner = False
+        for m in member_list:
+            if m.user == request.user:
+                member = m
+                if member.workspace.owner == request.user:
+                    is_owner = True
+                    break
+                break
+
+        if is_owner and len(member_list) > 1:
+            return Response(
+                {
+                    "message": ["Transfer ownership or delete workspace first"],
+                    "status": status.HTTP_400_BAD_REQUEST,
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        member.is_active = False
+        member.save()
+
+        return Response(
+            {
+                "message": "Successfully left the workspace",
                 "status": status.HTTP_200_OK,
             },
             status=status.HTTP_200_OK,
