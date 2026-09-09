@@ -6,10 +6,11 @@ from .serializers import (
     WorkspaceMemeberSerializer,
     WorkspaceMemberInviteSerializer,
     MemberInviteAcceptSerializer,
+    WorkspaceRoleSerializer,
 )
 from rest_framework.response import Response
 from rest_framework import status
-from .models import Workspace, WorkspaceMember, WorkspaceMemberInvite
+from .models import Workspace, WorkspaceMember, WorkspaceMemberInvite, Role
 from django.db.models import Q
 from rest_framework.permissions import IsAuthenticated
 from django.db import transaction
@@ -133,7 +134,7 @@ class WorkspaceWithIdView(APIView):
         )
 
 
-class WorkspaceMemeberView(APIView):
+class WorkspaceMemberView(APIView):
     def get_permissions(self):
         permissions = {
             "GET": [IsAuthenticated(), IsWorkspaceMember()],
@@ -142,8 +143,7 @@ class WorkspaceMemeberView(APIView):
             self.request.method, [IsAuthenticated(), IsWorkspaceMember()]
         )
 
-    def get(self, request):
-        workspace_id = request.headers.get("workspaceId", "")
+    def get(self, request, workspace_id):
         workspace_member = WorkspaceMember.objects.prefetch_related(
             "member_roles__role", "member_permissions__permission", "user__profile"
         ).filter(is_active=True, workspace=workspace_id)
@@ -173,9 +173,10 @@ class WorkspaceMemberInviteView(APIView):
             self.request.method, [IsAuthenticated(), IsWorkspaceMember()]
         )
 
-    def post(self, request):
+    def post(self, request, workspace_id):
         serializer = WorkspaceMemberInviteSerializer(
-            data=request.data, context={"user": request.user}
+            data=request.data,
+            context={"user": request.user, "workspace_id": workspace_id},
         )
         if serializer.is_valid(raise_exception=True):
             serializer.save()
@@ -195,7 +196,7 @@ class WorkspaceMemberInviteView(APIView):
             status=status.HTTP_400_BAD_REQUEST,
         )
 
-    def get(self, request):
+    def get(self, request, workspace_id):
         token = request.headers.get("token", "")
         if not token:
             return Response(
@@ -311,23 +312,30 @@ class WorkspaceMemberWithIdView(APIView):
 
 class WorkspaceMemberLeaveView(APIView):
     permission_classes = [IsAuthenticated, IsWorkspaceMember]
+
     def post(self, request):
         workspace_id = request.headers.get("workspaceId", "")
 
         workspace = Workspace.objects.get(id=workspace_id)
-        
+
         member = WorkspaceMember.objects.filter(
             is_active=True, workspace=workspace_id, user=request.user
         ).first()
 
         is_owner = workspace.owner == request.user
-        
-        other_members = WorkspaceMember.objects.filter(is_active=True, workspace=workspace_id).exclude(user=request.user).exists()
+
+        other_members = (
+            WorkspaceMember.objects.filter(is_active=True, workspace=workspace_id)
+            .exclude(user=request.user)
+            .exists()
+        )
 
         if is_owner and other_members:
             return Response(
                 {
-                    "message": ["Transfer ownership or delete all workspace members first"],
+                    "message": [
+                        "Transfer ownership or delete all workspace members first"
+                    ],
                     "status": status.HTTP_400_BAD_REQUEST,
                 },
                 status=status.HTTP_400_BAD_REQUEST,
@@ -340,6 +348,146 @@ class WorkspaceMemberLeaveView(APIView):
             {
                 "message": "Successfully left the workspace",
                 "status": status.HTTP_200_OK,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+
+class WorkspaceRoleView(APIView):
+    def get_permissions(self):
+        permissions = {
+            "POST": [
+                IsAuthenticated(),
+                HasWorkspacePermission("workspace:can_create_roles")(),
+            ],
+        }
+        return permissions.get(
+            self.request.method, [IsAuthenticated(), IsWorkspaceMember()]
+        )
+
+    def get(self, request):
+        workspace_id = request.headers.get("workspaceId")
+        roles = Role.objects.filter(workspace=workspace_id)
+
+        serializer = WorkspaceRoleSerializer(roles, many=True)
+
+        return Response(
+            {
+                "status": status.HTTP_200_OK,
+                "message": "Roles Retrieved Successfully",
+                "data": serializer.data,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+    def post(self, request):
+        serializer = WorkspaceRoleSerializer(
+            data=request.data, context={"request": request}
+        )
+
+        if serializer.is_valid(raise_exception=True):
+            serializer.save()
+
+            return Response(
+                {
+                    "status": status.HTTP_201_CREATED,
+                    "message": "Role created successfully",
+                    "data": serializer.data,
+                },
+                status=status.HTTP_201_CREATED,
+            )
+        return Response(
+            {
+                "status": status.HTTP_400_BAD_REQUEST,
+                "message": serializer.errors,
+            },
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+
+class WorkspaceRoleWithIdView(APIView):
+    def get_permissions(self):
+        permissions = {
+            "PATCH": [
+                IsAuthenticated(),
+                HasWorkspacePermission("workspace:can_update_roles")(),
+            ],
+            "DELETE": [
+                IsAuthenticated(),
+                HasWorkspacePermission("workspace:can_delete_roles")(),
+            ],
+        }
+        return permissions.get(
+            self.request.method, [IsAuthenticated(), IsWorkspaceMember()]
+        )
+
+    def get(self, request, role_id):
+        role = Role.objects.filter(id=role_id).first()
+
+        if role is None:
+            return Response(
+                {"status": status.HTTP_400_BAD_REQUEST, "message": ["Role not found"]},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        serializer = WorkspaceRoleSerializer(role)
+
+        return Response(
+            {
+                "status": status.HTTP_200_OK,
+                "message": "Role Retrieved Successfully",
+                "data": serializer.data,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+    def patch(self, request, role_id):
+        role = Role.objects.filter(id=role_id).first()
+
+        if role is None:
+            return Response(
+                {"status": status.HTTP_400_BAD_REQUEST, "message": ["Role not found"]},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        serializer = WorkspaceRoleSerializer(
+            role, data=request.data, context={"request": request}, partial=True
+        )
+
+        if serializer.is_valid(raise_exception=True):
+            serializer.save()
+
+            return Response(
+                {
+                    "status": status.HTTP_200_OK,
+                    "message": "Role updated successfully",
+                    "data": serializer.data,
+                },
+                status=status.HTTP_200_OK,
+            )
+        return Response(
+            {
+                "status": status.HTTP_400_BAD_REQUEST,
+                "message": serializer.errors,
+            },
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    def delete(self, request, role_id):
+        role = Role.objects.filter(id=role_id).first()
+
+        if role is None:
+            return Response(
+                {"status": status.HTTP_400_BAD_REQUEST, "message": ["Role not found"]},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        role.delete()
+
+        return Response(
+            {
+                "status": status.HTTP_200_OK,
+                "message": "Role deleted successfully",
             },
             status=status.HTTP_200_OK,
         )

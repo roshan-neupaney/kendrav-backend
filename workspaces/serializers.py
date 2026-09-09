@@ -143,7 +143,6 @@ class WorkspaceMemberInviteSerializer(serializers.ModelSerializer):
     role = serializers.PrimaryKeyRelatedField(queryset=Role.objects.all())
     expires_at = serializers.DateTimeField(required=False)
     invited_by = serializers.CharField(required=False)
-    workspace_id = serializers.IntegerField(write_only=True)
 
     class Meta:
         model = WorkspaceMemberInvite
@@ -152,7 +151,6 @@ class WorkspaceMemberInviteSerializer(serializers.ModelSerializer):
             "email",
             "role",
             "status",
-            "workspace_id",
             "expires_at",
             "created_at",
             "updated_at",
@@ -163,14 +161,14 @@ class WorkspaceMemberInviteSerializer(serializers.ModelSerializer):
         now = datetime.now(timezone.utc)
         expires_at = now + timedelta(days=3)
         user = self.context.get("user", "")
+        workspace_id = self.context.get("workspace_id", "")
 
         validated_data["invited_by"] = user
         validated_data["expires_at"] = expires_at
-        workspace_id = validated_data.get('workspace_id', '')
 
         workspace = Workspace.objects.filter(id=workspace_id).first()
         if not workspace:
-            return serializers.ValidationError("Workspace not found")
+            raise serializers.ValidationError("Workspace not found")
 
         full_name = user.profile.full_name
         workspace_title = workspace.title
@@ -248,3 +246,22 @@ class MemberInviteAcceptSerializer(serializers.Serializer):
         member_invite.save()
 
         return workspace_member
+
+
+class WorkspaceRoleSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Role
+        fields = ["id", "title"]
+
+    def create(self, validated_data):
+        workspace_id = self.context.get("request").headers.get("workspaceId")
+        workspace = Workspace.objects.filter(id=workspace_id).first()
+
+        role = Role.objects.create(**validated_data, workspace=workspace)
+
+        return role
+
+    def update(self, instance, validated_data):
+        instance.title = validated_data.get("title", instance.title)
+        instance.save()
+        return instance

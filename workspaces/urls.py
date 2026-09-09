@@ -2,24 +2,31 @@ from django.urls import path
 from .views import (
     WorkspaceView,
     WorkspaceWithIdView,
-    WorkspaceMemeberView,
+    WorkspaceMemberView,
     WorkspaceMemberInviteView,
     MemberInviteAcceptView,
     MemberInviteDeclineView,
     WorkspaceMemberWithIdView,
     WorkspaceMemberLeaveView,
+    WorkspaceRoleView,
+    WorkspaceRoleWithIdView
 )
 
 urlpatterns = [
     path("", WorkspaceView.as_view(), name="workspace"),
     path(
-        "<str:workspace_id>/", WorkspaceWithIdView.as_view(), name="workspace-with-id"
+        "<int:workspace_id>/", WorkspaceWithIdView.as_view(), name="workspace-with-id"
     ),
-    path("member/all/", WorkspaceMemeberView.as_view(), name="workspace-members"),
+    path("<int:workspace_id>/member/", WorkspaceMemberView.as_view(), name="workspace-members"),
     path(
-        "member/invite/",
+        "<int:workspace_id>/member/invite/",
         WorkspaceMemberInviteView.as_view(),
         name="workspace-member-invite",
+    ),
+    path(
+        "member/<int:member_id>/",
+        WorkspaceMemberWithIdView.as_view(),
+        name="member-with-id",
     ),
     path(
         "member/accept-invite/",
@@ -32,13 +39,18 @@ urlpatterns = [
         name="member-decline-invite",
     ),
     path(
-        "member/<int:member_id>/",
-        WorkspaceMemberWithIdView.as_view(),
-        name="member-with-id",
-    ),
-    path(
         "member/leave",
         WorkspaceMemberLeaveView.as_view(),
         name="member-leave",
+    ),
+    path(
+        "role/",
+        WorkspaceRoleView.as_view(),
+        name="member-role",
+    ),
+    path(
+        "role/<int:role_id>/",
+        WorkspaceRoleWithIdView.as_view(),
+        name="member-role-with-id",
     ),
 ]
