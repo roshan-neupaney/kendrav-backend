@@ -143,8 +143,7 @@ class WorkspaceMemeberView(APIView):
         )
 
     def get(self, request):
-        print('hello')
-        workspace_id = request.header.get("workspaceId", "")
+        workspace_id = request.headers.get("workspaceId", "")
         workspace_member = WorkspaceMember.objects.prefetch_related(
             "member_roles__role", "member_permissions__permission", "user__profile"
         ).filter(is_active=True, workspace=workspace_id)
@@ -311,29 +310,24 @@ class WorkspaceMemberWithIdView(APIView):
 
 
 class WorkspaceMemberLeaveView(APIView):
-    permission_classes = [IsWorkspaceMember]
+    permission_classes = [IsAuthenticated, IsWorkspaceMember]
     def post(self, request):
         workspace_id = request.headers.get("workspaceId", "")
+
+        workspace = Workspace.objects.get(id=workspace_id)
         
-        workspace_members = WorkspaceMember.objects.select_related("workspace").filter(
-            is_active=True, workspace=workspace_id
-        )
+        member = WorkspaceMember.objects.filter(
+            is_active=True, workspace=workspace_id, user=request.user
+        ).first()
 
-        member_list = list(workspace_members.all())
-        member = {}
-        is_owner = False
-        for m in member_list:
-            if m.user == request.user:
-                member = m
-                if member.workspace.owner == request.user:
-                    is_owner = True
-                    break
-                break
+        is_owner = workspace.owner == request.user
+        
+        other_members = WorkspaceMember.objects.filter(is_active=True, workspace=workspace_id).exclude(user=request.user).exists()
 
-        if is_owner and len(member_list) > 1:
+        if is_owner and other_members:
             return Response(
                 {
-                    "message": ["Transfer ownership or delete workspace first"],
+                    "message": ["Transfer ownership or delete all workspace members first"],
                     "status": status.HTTP_400_BAD_REQUEST,
                 },
                 status=status.HTTP_400_BAD_REQUEST,

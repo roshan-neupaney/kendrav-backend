@@ -81,7 +81,7 @@ Response → {
 }
 
 Method   → GET
-Endpoint → /api/v1/workspace/members
+Endpoint → /api/v1/workspace/member/all
 Auth     → private
 Response → {
     status: number,

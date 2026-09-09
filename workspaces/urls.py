@@ -15,7 +15,7 @@ urlpatterns = [
     path(
         "<str:workspace_id>/", WorkspaceWithIdView.as_view(), name="workspace-with-id"
     ),
-    path("members/", WorkspaceMemeberView.as_view(), name="workspace-members"),
+    path("member/all/", WorkspaceMemeberView.as_view(), name="workspace-members"),
     path(
         "member/invite/",
         WorkspaceMemberInviteView.as_view(),
