@@ -16,6 +16,7 @@ def add_permissions(apps, schema_editor):
         "workspace:can_create_roles",
         "workspace:can_update_roles",
         "workspace:can_delete_roles",
+        "workspace:can_assign_roles",
         "channels:can_connect",
         "channels:can_disconnect",
         "post:can_create",

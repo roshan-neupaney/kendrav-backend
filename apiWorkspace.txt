@@ -247,18 +247,18 @@ Method   → PATCH
 Endpoint → /api/v1/workspace/member/:id/roles
 Auth     → private
 Payload  → {
-    role_id: number;
+    role_ids: [number];
 }
 Response → {
     status: number,
     message: string,
-    data: {
+    data: [{
         id: number;
         workspace_member_id: number;
         role_id: number;
         created_at: string;
         updated_at: string;
-    }
+    }]
 }
 
 Method   → GET
@@ -329,6 +329,7 @@ Response → {
 "workspace:can_create_roles",
 "workspace:can_update_roles",
 "workspace:can_delete_roles",
+"workspace:can_assign_roles",
 "channels:can_connect",
 "channels:can_disconnect",
 "post:can_create",

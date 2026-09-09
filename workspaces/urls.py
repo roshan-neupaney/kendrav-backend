@@ -9,7 +9,8 @@ from .views import (
     WorkspaceMemberWithIdView,
     WorkspaceMemberLeaveView,
     WorkspaceRoleView,
-    WorkspaceRoleWithIdView
+    WorkspaceRoleWithIdView,
+    WorkspaceMemberRoleView,
 )
 
 urlpatterns = [
@@ -52,5 +53,10 @@ urlpatterns = [
         "role/<int:role_id>/",
         WorkspaceRoleWithIdView.as_view(),
         name="member-role-with-id",
+    ),
+    path(
+        "member/<int:id>/roles/",
+        WorkspaceMemberRoleView.as_view(),
+        name="member-roles",
     ),
 ]

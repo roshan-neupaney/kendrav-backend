@@ -242,6 +242,8 @@ class MemberInviteAcceptSerializer(serializers.Serializer):
         )
 
         workspace_member.is_active = True
+        workspace_member.save()
+
         member_invite.status = "accepted"
         member_invite.save()
 
@@ -265,3 +267,41 @@ class WorkspaceRoleSerializer(serializers.ModelSerializer):
         instance.title = validated_data.get("title", instance.title)
         instance.save()
         return instance
+
+
+class WorkspaceMemberRoleSerializer(serializers.ModelSerializer):
+    role_ids = serializers.PrimaryKeyRelatedField(
+        many=True, queryset=Role.objects.all(), write_only=True
+    )
+
+    class Meta:
+        model = WorkspaceMemberRole
+        fields = [
+            "id",
+            "role_ids",
+            "created_at",
+            "updated_at",
+        ]
+
+    def create(self, validated_data):
+        roles = validated_data.pop("role_ids")
+        workspace_member_id = validated_data.pop("workspace_member_id")
+
+        workspace_member = WorkspaceMember.objects.filter(
+            id=workspace_member_id
+        ).first()
+
+        for role in roles:
+            member_role = WorkspaceMemberRole.objects.filter(
+                role=role, workspace_member=workspace_member
+            )
+            if member_role.exists():
+                member_role.delete()
+            else:
+                WorkspaceMemberRole.objects.create(
+                    role=role, workspace_member=workspace_member
+                )
+
+        return workspace_member
+
+
