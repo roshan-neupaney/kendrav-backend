@@ -11,6 +11,7 @@ from .views import (
     WorkspaceRoleView,
     WorkspaceRoleWithIdView,
     WorkspaceMemberRoleView,
+    RolePermissionView
 )
 
 urlpatterns = [
@@ -53,6 +54,11 @@ urlpatterns = [
         "role/<int:role_id>/",
         WorkspaceRoleWithIdView.as_view(),
         name="member-role-with-id",
+    ),
+    path(
+        "role/<int:role_id>/permissions/",
+        RolePermissionView.as_view(),
+        name="role-permissions",
     ),
     path(
         "member/<int:id>/roles/",

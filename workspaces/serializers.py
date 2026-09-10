@@ -305,3 +305,13 @@ class WorkspaceMemberRoleSerializer(serializers.ModelSerializer):
         return workspace_member
 
 
+class RolePermissionSerializer(serializers.ModelSerializer):
+    permission_ids = serializers.PrimaryKeyRelatedField(queryset=Permission.objects.all(), many=True, write_only=True)
+    class Meta:
+        model = RolePermission
+        fields = ['id', 'permission_ids']
+
+    def create(self, validated_data):
+        
+
+

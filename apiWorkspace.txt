@@ -252,13 +252,6 @@ Payload  → {
 Response → {
     status: number,
     message: string,
-    data: [{
-        id: number;
-        workspace_member_id: number;
-        role_id: number;
-        created_at: string;
-        updated_at: string;
-    }]
 }
 
 Method   → GET
