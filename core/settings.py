@@ -56,6 +56,7 @@ INSTALLED_APPS = [
     "dj_rest_auth",
     "dj_rest_auth.registration",
     "corsheaders",
+    'django_celery_beat',
 ]
 
 REST_FRAMEWORK = {
@@ -109,6 +110,10 @@ SOCIALACCOUNT_PROVIDERS = {
         },
     }
 }
+
+CELERY_BROKER_URL = env("REDIS_URL")
+CELERY_RESULT_BACKEND = env("REDIS_URL")
+CELERY_TIMEZONE = 'UTC'
 
 CACHES = {
     "default": {
