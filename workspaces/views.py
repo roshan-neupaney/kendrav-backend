@@ -9,6 +9,7 @@ from .serializers import (
     WorkspaceRoleSerializer,
     WorkspaceMemberRoleSerializer,
     RolePermissionSerializer,
+    WorkspaceMemberPermissionSerializer,
 )
 from rest_framework.response import Response
 from rest_framework import status
@@ -507,15 +508,42 @@ class WorkspaceMemberRoleView(APIView):
             self.request.method, [IsAuthenticated(), IsWorkspaceMember()]
         )
 
-    def post(self, request, id):
+    def post(self, request, member_id):
         serializer = WorkspaceMemberRoleSerializer(data=request.data)
 
         if serializer.is_valid(raise_exception=True):
-            serializer.save(workspace_member_id=id)
+            serializer.save(member_id=member_id)
             return Response(
                 {
                     "status": status.HTTP_200_OK,
                     "message": "Member roles updated successfully",
+                },
+                status=status.HTTP_200_OK,
+            )
+        return Response(
+            {
+                "status": status.HTTP_400_BAD_REQUEST,
+                "message": serializer.errors,
+            },
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+
+class WorkspaceMemberPermissionView(APIView):
+    permission_classes = [
+        IsAuthenticated,
+        HasWorkspacePermission("workspace:can_assign_member_permissions"),
+    ]
+
+    def post(self, request, member_id):
+        serializer = WorkspaceMemberPermissionSerializer(data=request.data)
+
+        if serializer.is_valid(raise_exception=True):
+            serializer.save(member_id=member_id)
+            return Response(
+                {
+                    "status": status.HTTP_200_OK,
+                    "message": "Member permissions updated successfully",
                 },
                 status=status.HTTP_200_OK,
             )
@@ -553,3 +581,4 @@ class RolePermissionView(APIView):
             },
             status=status.HTTP_400_BAD_REQUEST,
         )
+

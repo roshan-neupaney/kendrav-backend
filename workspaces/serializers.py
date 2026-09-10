@@ -7,6 +7,7 @@ from .models import (
     Permission,
     WorkspaceMemberInvite,
     WorkspaceMemberRole,
+    WorkspaceMemberPermission,
 )
 from rest_framework import serializers
 from .utils import generate_workspace_slug, send_invite_email
@@ -285,11 +286,12 @@ class WorkspaceMemberRoleSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         roles = validated_data.pop("role_ids")
-        workspace_member_id = validated_data.pop("workspace_member_id")
+        member_id = validated_data.pop("member_id")
 
-        workspace_member = WorkspaceMember.objects.filter(
-            id=workspace_member_id
-        ).first()
+        workspace_member = WorkspaceMember.objects.filter(id=member_id).first()
+
+        if workspace_member is None:
+            raise serializers.ValidationError("Member not found")
 
         for role in roles:
             member_role = WorkspaceMemberRole.objects.filter(
@@ -303,6 +305,55 @@ class WorkspaceMemberRoleSerializer(serializers.ModelSerializer):
                 )
 
         return workspace_member
+
+
+class WorkspaceMemberPermissionSerializer(serializers.ModelSerializer):
+    permission_ids = serializers.PrimaryKeyRelatedField(
+        queryset=Permission.objects.all(), many=True, write_only=True
+    )
+
+    class Meta:
+        model = WorkspaceMemberPermission
+        fields = [
+            "id",
+            "permission_ids",
+            "created_at",
+            "updated_at",
+        ]
+
+    def create(self, validated_data):
+        permissions = validated_data.pop("permission_ids")
+        member_id = validated_data.pop("member_id")
+        print(member_id)
+        member = (
+            WorkspaceMember.objects.prefetch_related("member_roles")
+            .filter(id=member_id)
+            .first()
+        )
+
+        if member is None:
+            raise serializers.ValidationError("Member not found")
+
+        for permission in permissions:
+            member_permission = WorkspaceMemberPermission.objects.filter(
+                workspace_member=member_id, permission=permission
+            )
+
+            if member_permission.exists():
+                member_permission.delete()
+
+            else:
+                member_role_ids = member.member_roles.values_list("role_id", flat=True)
+                is_revoked = RolePermission.objects.filter(
+                    permission=permission, role_id__in=member_role_ids
+                ).exists()
+                WorkspaceMemberPermission.objects.create(
+                    workspace_member=member,
+                    permission=permission,
+                    is_revoked=is_revoked,
+                )
+
+        return member
 
 
 class RolePermissionSerializer(serializers.ModelSerializer):
