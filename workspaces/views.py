@@ -10,10 +10,11 @@ from .serializers import (
     WorkspaceMemberRoleSerializer,
     RolePermissionSerializer,
     WorkspaceMemberPermissionSerializer,
+    WorkspacePermissionSerializer,
 )
 from rest_framework.response import Response
 from rest_framework import status
-from .models import Workspace, WorkspaceMember, WorkspaceMemberInvite, Role
+from .models import Workspace, WorkspaceMember, WorkspaceMemberInvite, Role, Permission
 from django.db.models import Q
 from rest_framework.permissions import IsAuthenticated
 from django.db import transaction
@@ -582,3 +583,23 @@ class RolePermissionView(APIView):
             status=status.HTTP_400_BAD_REQUEST,
         )
 
+
+class WorkspacePermissionView(APIView):
+    permission_classes = [
+        IsAuthenticated,
+        IsWorkspaceMember,
+    ]
+
+    def get(self, request):
+        permissions = Permission.objects.filter(is_active=True)
+
+        serializer = WorkspacePermissionSerializer(permissions, many=True)
+
+        return Response(
+            {
+                "status": status.HTTP_200_OK,
+                "message": "Permissions retrived successfully",
+                "data": serializer.data,
+            },
+            status=status.HTTP_200_OK,
+        )

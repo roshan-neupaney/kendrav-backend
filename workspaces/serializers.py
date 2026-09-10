@@ -388,3 +388,9 @@ class RolePermissionSerializer(serializers.ModelSerializer):
                 RolePermission.objects.create(role=role, permission=permission)
 
         return role
+
+
+class WorkspacePermissionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Permission
+        fields = ['id', 'title']

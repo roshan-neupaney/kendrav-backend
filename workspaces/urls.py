@@ -13,6 +13,7 @@ from .views import (
     WorkspaceMemberRoleView,
     RolePermissionView,
     WorkspaceMemberPermissionView,
+    WorkspacePermissionView
 )
 
 urlpatterns = [
@@ -42,7 +43,7 @@ urlpatterns = [
         name="member-decline-invite",
     ),
     path(
-        "member/leave",
+        "member/leave/",
         WorkspaceMemberLeaveView.as_view(),
         name="member-leave",
     ),
@@ -70,5 +71,10 @@ urlpatterns = [
         "member/<int:member_id>/permissions/",
         WorkspaceMemberPermissionView.as_view(),
         name="member-permissions",
+    ),
+    path(
+        "permissions/",
+        WorkspacePermissionView.as_view(),
+        name="workspace-permissions",
     ),
 ]
