@@ -161,7 +161,7 @@ class WorkspaceMemberInviteSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         now = datetime.now(timezone.utc)
-        expires_at = now + timedelta(days=3)
+        expires_at = now + timedelta(seconds=5)
         user = self.context.get("user", "")
         workspace_id = self.context.get("workspace_id", "")
 
