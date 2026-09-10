@@ -515,7 +515,7 @@ class WorkspaceMemberRoleView(APIView):
             return Response(
                 {
                     "status": status.HTTP_200_OK,
-                    "message": "Roles assigned to member successfully",
+                    "message": "Member roles updated successfully",
                 },
                 status=status.HTTP_200_OK,
             )
@@ -529,6 +529,11 @@ class WorkspaceMemberRoleView(APIView):
 
 
 class RolePermissionView(APIView):
+    permission_classes = [
+        IsAuthenticated,
+        HasWorkspacePermission("workspace:can_assign_role_permissions"),
+    ]
+
     def post(self, request, role_id):
         serializer = RolePermissionSerializer(data=request.data)
 
@@ -537,7 +542,7 @@ class RolePermissionView(APIView):
             return Response(
                 {
                     "status": status.HTTP_200_OK,
-                    "message": "Permissions assigned to role successfully",
+                    "message": "Role permissions updated successfully",
                 },
                 status=status.HTTP_200_OK,
             )

@@ -306,12 +306,34 @@ class WorkspaceMemberRoleSerializer(serializers.ModelSerializer):
 
 
 class RolePermissionSerializer(serializers.ModelSerializer):
-    permission_ids = serializers.PrimaryKeyRelatedField(queryset=Permission.objects.all(), many=True, write_only=True)
+    permission_ids = serializers.PrimaryKeyRelatedField(
+        queryset=Permission.objects.all(), many=True, write_only=True
+    )
+
     class Meta:
         model = RolePermission
-        fields = ['id', 'permission_ids']
+        fields = [
+            "id",
+            "permission_ids",
+            "created_at",
+            "updated_at",
+        ]
 
     def create(self, validated_data):
-        
+        permissions = validated_data.pop("permission_ids")
+        role_id = validated_data.pop("role_id")
 
+        role = Role.objects.filter(id=role_id).first()
 
+        for permission in permissions:
+            role_permission = RolePermission.objects.filter(
+                role=role_id, permission=permission
+            )
+
+            if role_permission.exists():
+                role_permission.delete()
+
+            else:
+                RolePermission.objects.create(role=role, permission=permission)
+
+        return role
