@@ -1,0 +1,80 @@
+from django.urls import path
+from .views import (
+    WorkspaceView,
+    WorkspaceWithIdView,
+    WorkspaceMemberView,
+    WorkspaceMemberInviteView,
+    MemberInviteAcceptView,
+    MemberInviteDeclineView,
+    WorkspaceMemberWithIdView,
+    WorkspaceMemberLeaveView,
+    WorkspaceRoleView,
+    WorkspaceRoleWithIdView,
+    WorkspaceMemberRoleView,
+    RolePermissionView,
+    WorkspaceMemberPermissionView,
+    WorkspacePermissionView
+)
+
+urlpatterns = [
+    path("", WorkspaceView.as_view(), name="workspace"),
+    path(
+        "<int:workspace_id>/", WorkspaceWithIdView.as_view(), name="workspace-with-id"
+    ),
+    path("<int:workspace_id>/member/", WorkspaceMemberView.as_view(), name="workspace-members"),
+    path(
+        "<int:workspace_id>/member/invite/",
+        WorkspaceMemberInviteView.as_view(),
+        name="workspace-member-invite",
+    ),
+    path(
+        "member/<int:member_id>/",
+        WorkspaceMemberWithIdView.as_view(),
+        name="member-with-id",
+    ),
+    path(
+        "member/accept-invite/",
+        MemberInviteAcceptView.as_view(),
+        name="member-accept-invite",
+    ),
+    path(
+        "member/decline-invite/",
+        MemberInviteDeclineView.as_view(),
+        name="member-decline-invite",
+    ),
+    path(
+        "member/leave/",
+        WorkspaceMemberLeaveView.as_view(),
+        name="member-leave",
+    ),
+    path(
+        "role/",
+        WorkspaceRoleView.as_view(),
+        name="member-role",
+    ),
+    path(
+        "role/<int:role_id>/",
+        WorkspaceRoleWithIdView.as_view(),
+        name="member-role-with-id",
+    ),
+    path(
+        "role/<int:role_id>/permissions/",
+        RolePermissionView.as_view(),
+        name="role-permissions",
+    ),
+    path(
+        "member/<int:member_id>/roles/",
+        WorkspaceMemberRoleView.as_view(),
+        name="member-roles",
+    ),
+    path(
+        "member/<int:member_id>/permissions/",
+        WorkspaceMemberPermissionView.as_view(),
+        name="member-permissions",
+    ),
+    path(
+        "permissions/",
+        WorkspacePermissionView.as_view(),
+        name="workspace-permissions",
+    ),
+]

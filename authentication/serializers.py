@@ -55,6 +55,9 @@ class RegistrationSerializer(serializers.ModelSerializer):
         if full_name and hasattr(user, "profile"):
             user.profile.full_name = full_name
             user.profile.save()
+
+        workspace = user.workspaces.filter(type='personal').first()
+
         refresh = RefreshToken.for_user(user)
         access_token = str(refresh.access_token)
         refresh_token = str(refresh)
@@ -66,7 +69,7 @@ class RegistrationSerializer(serializers.ModelSerializer):
             location=location,
         )
         return {
-            "user": user,
+            "workspace_slug": workspace.slug_url if workspace else None,
             "access_token": access_token,
             "refresh_token": refresh_token,
         }
@@ -94,6 +97,7 @@ class LoginSerializer(serializers.Serializer):
         if not user.check_password(password):
             raise serializers.ValidationError("Incorrect Password")
 
+        workspace = user.workspaces.filter(type='personal').first()
         refresh = RefreshToken.for_user(user)
         access_token = str(refresh.access_token)
         refresh_token = str(refresh)
@@ -119,14 +123,18 @@ class LoginSerializer(serializers.Serializer):
             device_name=device_name,
         )
 
-        return {"access_token": access_token, "refresh_token": refresh_token}
+        return {
+            "access_token": access_token,
+            "refresh_token": refresh_token,
+            "workspace_slug": workspace.slug_url if workspace else None,
+        }
+
 
 class GoogleLoginSerializer(serializers.Serializer):
     id_token = serializers.CharField()
     device_id = serializers.CharField(write_only=True)
     device_name = serializers.CharField(write_only=True, required=False)
     location = serializers.CharField(write_only=True, required=False)
-    
 
 
 class ActiveSessionSerializer(serializers.ModelSerializer):
@@ -161,12 +169,14 @@ class ChangePasswordSerializer(serializers.Serializer):
         hashed_password = make_password(new_password)
 
         cache.set(
-            f"change_password:{user.id}", {"otp": otp, "new_password": hashed_password}, timeout=300
+            f"change_password:{user.id}",
+            {"otp": otp, "new_password": hashed_password},
+            timeout=300,
         )
 
         send_otp_email(user.email, otp)
 
-        return {"message": 'Success'}
+        return {"message": "Success"}
 
 
 class ChangePasswordOTPSerializer(serializers.Serializer):
@@ -176,76 +186,77 @@ class ChangePasswordOTPSerializer(serializers.Serializer):
         otp_code = attrs.pop("otp_code")
         user = self.context.get("user")
 
-        attempts_key = f'change_password_attempts:{user.id}'
+        attempts_key = f"change_password_attempts:{user.id}"
         attempts = cache.get(attempts_key, 0)
 
         change_password_data = cache.get(f"change_password:{user.id}", {})
-        otp = change_password_data.get('otp', '')
-        new_password = change_password_data.get('new_password', '')
-
+        otp = change_password_data.get("otp", "")
+        new_password = change_password_data.get("new_password", "")
 
         if not otp:
-            raise serializers.ValidationError('OTP Expired')
+            raise serializers.ValidationError("OTP Expired")
         elif attempts >= 3:
             cache.delete(f"change_password:{user.id}")
             cache.delete(attempts_key)
-            raise serializers.ValidationError('Too many attempts. Request new OTP')
+            raise serializers.ValidationError("Too many attempts. Request new OTP")
         elif otp != otp_code:
             cache.set(attempts_key, attempts + 1, timeout=300)
-            raise serializers.ValidationError('Incorrect OTP')
+            raise serializers.ValidationError("Incorrect OTP")
 
         user.password = new_password
         user.save()
         cache.delete(f"change_password:{user.id}")
 
-        return {"message": 'Password Changed Successfully'}
-    
+        return {"message": "Password Changed Successfully"}
+
+
 class ForgotPasswordSerializer(serializers.Serializer):
     email = serializers.EmailField()
+
     def validate(self, attrs):
-        email = attrs.pop('email')
-        logger.info('enter validate method')
+        email = attrs.pop("email")
+        logger.info("enter validate method")
         try:
-          user = User.objects.get(email=email)
+            user = User.objects.get(email=email)
         except User.DoesNotExist:
-            raise serializers.ValidationError('Invalid Email Address')
-        
-        logger.info('user found')
+            raise serializers.ValidationError("Invalid Email Address")
+
+        logger.info("user found")
         token = secrets.token_urlsafe(32)
 
         cache.set(f"reset_token:{token}", user.id, timeout=600)
-        logger.info('set redis cache')
+        logger.info("set redis cache")
 
         frontend_url = settings.FRONTEND_BASE_URL
-        logger.info(f'frontend url is: {frontend_url}')
+        logger.info(f"frontend url is: {frontend_url}")
         reset_link = f"{frontend_url}/reset-password/?token={token}"
-        logger.info(f'reset link is: {reset_link}')
+        logger.info(f"reset link is: {reset_link}")
 
         send_reset_link_email(user.email, reset_link)
-        return {
-            "message": "Success"
-        }
-        
+        return {"message": "Success"}
+
+
 class ResetPasswordSerializer(serializers.Serializer):
     token = serializers.CharField()
     new_password = serializers.CharField()
 
     def validate(self, attrs):
-        user_token = attrs.pop('token')
-        new_password = attrs.pop('new_password')
+        user_token = attrs.pop("token")
+        new_password = attrs.pop("new_password")
 
         user_id = cache.get(f"reset_token:{user_token}", 0)
 
         if not user_id:
-            raise serializers.ValidationError('Reset link expired')
-        
+            raise serializers.ValidationError("Reset link expired")
+
         user = User.objects.get(id=user_id)
         user.set_password(new_password)
         user.save()
 
         cache.delete(f"reset_token:{user_token}")
 
-        return {'message': 'Password reset successfully'}
+        return {"message": "Password reset successfully"}
+
 
 class RefreshTokenSerializer(serializers.Serializer):
     refresh = serializers.CharField()

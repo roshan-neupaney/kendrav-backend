@@ -44,6 +44,7 @@ class RegistrationView(APIView):
                         "data": {
                             "refresh_token": result["refresh_token"],
                             "access_token": result["access_token"],
+                            "workspace_slug": result["workspace_slug"]
                         },
                     },
                     status=status.HTTP_201_CREATED,
@@ -67,6 +68,7 @@ class LoginView(APIView):
                         "data": {
                             "refresh_token": result["refresh_token"],
                             "access_token": result["access_token"],
+                            "workspace_slug": result["workspace_slug"]
                         },
                     },
                     status=status.HTTP_200_OK,
@@ -131,6 +133,8 @@ class GoogleLoginView(APIView):
                         user.profile.is_email_verified = is_email_verified
                         user.profile.save()
 
+                    workspace = user.workspaces.filter(type='personal').first()
+
                     refresh = RefreshToken.for_user(user)
                     access_token = str(refresh.access_token)
                     refresh_token = str(refresh)
@@ -161,6 +165,7 @@ class GoogleLoginView(APIView):
                             "data": {
                                 "access_token": access_token,
                                 "refresh_token": refresh_token,
+                                "workspace_slug": workspace.slug_url if workspace else None 
                             },
                             "status": status.HTTP_200_OK,
                         },
