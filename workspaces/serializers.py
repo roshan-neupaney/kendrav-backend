@@ -10,7 +10,8 @@ from .models import (
     WorkspaceMemberPermission,
 )
 from rest_framework import serializers
-from .utils import generate_workspace_slug, send_invite_email
+from .utils import generate_workspace_slug
+from .tasks import send_invite_email_task
 from django.contrib.auth import get_user_model
 from users.serializers import ProfileSerializer
 from datetime import datetime, timedelta, timezone
@@ -186,7 +187,7 @@ class WorkspaceMemberInviteSerializer(serializers.ModelSerializer):
 
         frontend_url = settings.FRONTEND_BASE_URL
         invite_link = f"{frontend_url}/invitation/?token={token}"
-        send_invite_email(
+        send_invite_email_task.delay(
             inviter_name=full_name,
             workspace_title=workspace_title,
             role_title=role_title,
