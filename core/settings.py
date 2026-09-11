@@ -119,7 +119,7 @@ CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
 CELERY_BEAT_SCHEDULE = {
     'mark-expired-invites': {
         'task': 'workspaces.tasks.expire_invitation_task',
-        'schedule': 10.0,
+        'schedule': 3600.0,
     },
 }
 

@@ -11,10 +11,9 @@ def send_invite_email_task(inviter_name, workspace_title, role_title, invite_lin
 def expire_invitation_task():
     now = datetime.now(timezone.utc)
     member_invites = WorkspaceMemberInvite.objects.filter(status='pending', expires_at__lt=now)
-    print(member_invites)
 
     if member_invites.exists:
         for invite in member_invites:
             invite.status='expired'
-    # member_invites.bulk_update(member_invites, ['status'])
+
     WorkspaceMemberInvite.objects.bulk_update(member_invites, ['status'])
