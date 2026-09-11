@@ -11,6 +11,7 @@ TemplateTypeChoices = [
     ("full", "Full"),
 ]
 
+
 class Subscription(models.Model):
     plan_name = models.CharField(max_length=100)
     plan_type = models.CharField(max_length=50, choices=SubscriptionsTypeChoices)
@@ -34,3 +35,6 @@ class Subscription(models.Model):
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.plan_name
