@@ -20,3 +20,23 @@ class ChannelView(APIView):
                 "data": serializer.data,
             }
         )
+
+    def post(self, request):
+        serializer = ChannelSerializer(data=request.data)
+        if serializer.is_valid(raise_exception=True):
+            serializer.save()
+            return Response(
+                {
+                    "status": status.HTTP_201_CREATED,
+                    "message": "Channels created successfully",
+                    "data": serializer.data,
+                },
+                status=status.HTTP_201_CREATED
+            )
+        return Response(
+            {
+                "status": status.HTTP_400_BAD_REQUEST,
+                "message": serializer.errors,
+            },
+            status=status.HTTP_400_BAD_REQUEST
+        )
