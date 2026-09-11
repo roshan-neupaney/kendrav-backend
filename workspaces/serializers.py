@@ -41,9 +41,22 @@ class WorkspaceSerializer(serializers.ModelSerializer):
         workspace.slug_url = generate_workspace_slug(title, workspace_id=workspace.id)
         workspace.save()
 
-        WorkspaceMember.objects.create(
+        workspace_member = WorkspaceMember.objects.create(
             user=self.context["request"].user, workspace=workspace
         )
+
+        role = Role.objects.create(workspace=workspace, title="Admin")
+
+        WorkspaceMemberRole.objects.create(workspace_member=workspace_member, role=role)
+
+        permissions = Permission.objects.filter(is_active=True)
+
+        role_permission_instances = [
+            RolePermission(role=role, permission=permission)
+            for permission in permissions
+        ]
+
+        RolePermission.objects.bulk_create(role_permission_instances)
 
         return workspace
 
@@ -394,4 +407,4 @@ class RolePermissionSerializer(serializers.ModelSerializer):
 class WorkspacePermissionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Permission
-        fields = ['id', 'title']
+        fields = ["id", "title"]

@@ -18,6 +18,7 @@ from .models import Workspace, WorkspaceMember, WorkspaceMemberInvite, Role, Per
 from django.db.models import Q
 from rest_framework.permissions import IsAuthenticated
 from django.db import transaction
+from users.models import UserSubscription
 
 
 class WorkspaceView(APIView):
@@ -40,6 +41,41 @@ class WorkspaceView(APIView):
         )
 
     def post(self, request):
+        user_workspaces = Workspace.objects.filter(
+            owner=request.user, is_active=True
+        ).count()
+        user_subscription = (
+            UserSubscription.objects.select_related("subscription")
+            .filter(is_active=True, user=request.user)
+            .first()
+        )
+
+        if not user_subscription:
+            return Response(
+                {
+                    "message": ["No active user subscription found"],
+                    "status": status.HTTP_400_BAD_REQUEST,
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        subscription = user_subscription.subscription
+        if not subscription:
+            return Response(
+                {
+                    "message": ["No active subscription found"],
+                    "status": status.HTTP_400_BAD_REQUEST,
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if subscription.max_workspaces <= user_workspaces:
+            return Response(
+                {
+                    "status": status.HTTP_400_BAD_REQUEST,
+                    "message": ["Upgrade plan to create more workspaces"],
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
         serializer = WorkspaceSerializer(
             data=request.data, context={"request": request}
         )
