@@ -28,7 +28,7 @@ class Subscription(models.Model):
     max_ai_generative_hastags = models.IntegerField(default=0)
     ai_generative_ideas = models.BooleanField(default=False)
     max_ai_generative_ideas = models.IntegerField(default=0)
-    max_workspaces = models.IntegerField(default=0)
+    max_workspaces = models.IntegerField(default=1)
     price = models.DecimalField(max_digits=10, decimal_places=2)
     duration_days = models.IntegerField()
     is_active = models.BooleanField(default=True)
