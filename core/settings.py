@@ -114,6 +114,14 @@ SOCIALACCOUNT_PROVIDERS = {
 CELERY_BROKER_URL = env("REDIS_URL")
 CELERY_RESULT_BACKEND = env("REDIS_URL")
 CELERY_TIMEZONE = 'UTC'
+CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
+
+CELERY_BEAT_SCHEDULE = {
+    'mark-expired-invites': {
+        'task': 'workspaces.tasks.expire_invitation_task',
+        'schedule': 3600.0,
+    },
+}
 
 CACHES = {
     "default": {

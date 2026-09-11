@@ -5,12 +5,11 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.exceptions import TokenError
 import random
 from django.core.cache import cache
-from django.core.mail import send_mail
 from django.contrib.auth.hashers import make_password
 import secrets
 from django.conf import settings
-from .utils import send_otp_email, send_reset_link_email
 import logging
+from .tasks import send_reset_link_email_task, send_otp_email_task
 
 logger = logging.getLogger(__name__)
 
@@ -174,7 +173,7 @@ class ChangePasswordSerializer(serializers.Serializer):
             timeout=300,
         )
 
-        send_otp_email(user.email, otp)
+        send_otp_email_task.delay(user.email, otp)
 
         return {"message": "Success"}
 
@@ -232,7 +231,7 @@ class ForgotPasswordSerializer(serializers.Serializer):
         reset_link = f"{frontend_url}/reset-password/?token={token}"
         logger.info(f"reset link is: {reset_link}")
 
-        send_reset_link_email(user.email, reset_link)
+        send_reset_link_email_task.delay(user.email, reset_link)
         return {"message": "Success"}
 
 
