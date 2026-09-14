@@ -43,3 +43,58 @@ class ChannelView(APIView):
             },
             status=status.HTTP_400_BAD_REQUEST,
         )
+
+
+class ChannelWithIdView(APIView):
+    permission_classes = [IsSuperAdmin]
+
+    def patch(self, request, channel_id):
+        channel = Channel.objects.filter(
+            is_active=True, id=channel_id
+        ).first()
+
+        serializer = ChannelSerializer(channel, data=request.data, partial=True)
+
+        if serializer.is_valid(raise_exception=True):
+            serializer.save()
+
+            return Response(
+                {
+                    "message": "Channel updated successfully",
+                    "status": status.HTTP_200_OK,
+                    "data": serializer.data,
+                },
+                status=status.HTTP_200_OK,
+            )
+        return Response(
+            {
+                "message": serializer.error_messages,
+                "status": status.HTTP_400_BAD_REQUEST,
+            },
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    def delete(self, request, channel_id):
+        channel = Channel.objects.filter(
+            is_active=True, id=channel_id
+        ).first()
+
+        if channel is None:
+            return Response(
+                {
+                    "message": "Channel not found",
+                    "status": status.HTTP_400_BAD_REQUEST,
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        channel.is_active = False
+        channel.save()
+
+        return Response(
+            {
+                "message": "Channel deleted successfully",
+                "status": status.HTTP_200_OK,
+            },
+            status=status.HTTP_200_OK,
+        )
