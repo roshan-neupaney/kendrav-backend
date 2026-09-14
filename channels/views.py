@@ -2,8 +2,8 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from users.permission import IsSuperAdmin
-from .models import Channel
-from .serializers import ChannelSerializer
+from .models import Channel, WorkspaceChannel
+from .serializers import ChannelSerializer, WorkspaceChannelSerializer
 from rest_framework.permissions import AllowAny, IsAuthenticated
 
 
@@ -49,9 +49,7 @@ class ChannelWithIdView(APIView):
     permission_classes = [IsSuperAdmin]
 
     def patch(self, request, channel_id):
-        channel = Channel.objects.filter(
-            is_active=True, id=channel_id
-        ).first()
+        channel = Channel.objects.filter(is_active=True, id=channel_id).first()
 
         serializer = ChannelSerializer(channel, data=request.data, partial=True)
 
@@ -75,9 +73,7 @@ class ChannelWithIdView(APIView):
         )
 
     def delete(self, request, channel_id):
-        channel = Channel.objects.filter(
-            is_active=True, id=channel_id
-        ).first()
+        channel = Channel.objects.filter(is_active=True, id=channel_id).first()
 
         if channel is None:
             return Response(
@@ -98,3 +94,27 @@ class ChannelWithIdView(APIView):
             },
             status=status.HTTP_200_OK,
         )
+
+
+class WorkspaceChannelView(APIView):
+    def get_permissions(self):
+        method_permissions = {"GET": [AllowAny()], "POST": [IsSuperAdmin()]}
+        return method_permissions.get(self.request.method, [IsAuthenticated()])
+
+    def get(self, request, workspace_id):
+        workspace_channel = WorkspaceChannel.objects.filter(
+            is_active=True, workspace=workspace_id
+        )
+
+        serializer = WorkspaceChannelSerializer(workspace_channel, many=True)
+
+        return Response(
+            {
+                "status": status.HTTP_200_OK,
+                "message": "Worksapce channels retrived successfully",
+                "data": serializer.data,
+            }
+        )
+    
+    def post(self, request, workspace_id):
+        serailzer = WorkspaceChannelSerializer(data=request.data, context={'workspace_id': workspace_id})

@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import ChannelView, ChannelWithIdView
+from .views import ChannelView, ChannelWithIdView, WorkspaceChannelView
 
 urlpatterns = [
     path("", ChannelView.as_view(), name="channel"),
