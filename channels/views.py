@@ -4,10 +4,13 @@ from rest_framework import status
 from users.permission import IsSuperAdmin
 from .models import Channel
 from .serializers import ChannelSerializer
+from rest_framework.permissions import AllowAny, IsAuthenticated
 
 
 class ChannelView(APIView):
-    permission_classes = [IsSuperAdmin]
+    def get_permissions(self):
+        method_permissions = {"GET": [AllowAny()], "POST": [IsSuperAdmin()]}
+        return method_permissions.get(self.request.method, [IsAuthenticated()])
 
     def get(self, request):
         channel = Channel.objects.filter(is_active=True)
@@ -31,12 +34,12 @@ class ChannelView(APIView):
                     "message": "Channels created successfully",
                     "data": serializer.data,
                 },
-                status=status.HTTP_201_CREATED
+                status=status.HTTP_201_CREATED,
             )
         return Response(
             {
                 "status": status.HTTP_400_BAD_REQUEST,
                 "message": serializer.errors,
             },
-            status=status.HTTP_400_BAD_REQUEST
+            status=status.HTTP_400_BAD_REQUEST,
         )
