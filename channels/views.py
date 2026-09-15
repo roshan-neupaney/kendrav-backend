@@ -5,6 +5,7 @@ from users.permission import IsSuperAdmin
 from .models import Channel, WorkspaceChannel
 from .serializers import ChannelSerializer, WorkspaceChannelSerializer
 from rest_framework.permissions import AllowAny, IsAuthenticated
+from workspaces.permission import IsWorkspaceMember, HasWorkspacePermission
 
 
 class ChannelView(APIView):
@@ -97,9 +98,9 @@ class ChannelWithIdView(APIView):
 
 
 class WorkspaceChannelView(APIView):
-    def get_permissions(self):
-        method_permissions = {"GET": [AllowAny()], "POST": [IsSuperAdmin()]}
-        return method_permissions.get(self.request.method, [IsAuthenticated()])
+    # def get_permissions(self):
+    #     method_permissions = {"GET": [IsAuthenticated(), IsWorkspaceMember()], "POST": [HasWorkspacePermission("channels:can_connect")()]}
+    #     return method_permissions.get(self.request.method, [IsAuthenticated()])
 
     def get(self, request, workspace_id):
         workspace_channel = WorkspaceChannel.objects.filter(
@@ -118,3 +119,10 @@ class WorkspaceChannelView(APIView):
     
     def post(self, request, workspace_id):
         serailzer = WorkspaceChannelSerializer(data=request.data, context={'workspace_id': workspace_id})
+
+        if serailzer.is_valid(raise_exception=True):
+            serailzer.save()
+
+        return Response({
+            "message": ""
+        }, status=status.HTTP_200_OK)
