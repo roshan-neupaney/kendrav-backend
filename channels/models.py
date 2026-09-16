@@ -26,9 +26,10 @@ class Channel(models.Model):
 class WorkspaceChannel(models.Model):
     workspace = models.ForeignKey('workspaces.Workspace', on_delete=models.CASCADE, related_name='workspace_channels')
     channel = models.ForeignKey(Channel, on_delete=models.CASCADE, related_name='channel_workspaces')
-    email = models.EmailField()
-    username = models.CharField(max_length=100)
+    full_name = models.CharField(max_length=100, blank=True, null=True)
+    username = models.CharField(max_length=100, blank=True, null=True)
     account_id = models.CharField(max_length=100, blank=True, null=True)
+    profile_picture = models.CharField(blank=True, null=True)
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

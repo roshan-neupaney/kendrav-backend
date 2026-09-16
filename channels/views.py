@@ -98,9 +98,9 @@ class ChannelWithIdView(APIView):
 
 
 class WorkspaceChannelView(APIView):
-    # def get_permissions(self):
-    #     method_permissions = {"GET": [IsAuthenticated(), IsWorkspaceMember()], "POST": [HasWorkspacePermission("channels:can_connect")()]}
-    #     return method_permissions.get(self.request.method, [IsAuthenticated()])
+    def get_permissions(self):
+        method_permissions = {"GET": [IsAuthenticated(), IsWorkspaceMember()], "POST": [IsAuthenticated(), HasWorkspacePermission("channels:can_connect")()]}
+        return method_permissions.get(self.request.method, [IsAuthenticated()])
 
     def get(self, request, workspace_id):
         workspace_channel = WorkspaceChannel.objects.filter(
@@ -116,13 +116,32 @@ class WorkspaceChannelView(APIView):
                 "data": serializer.data,
             }
         )
-    
+
     def post(self, request, workspace_id):
-        serailzer = WorkspaceChannelSerializer(data=request.data, context={'workspace_id': workspace_id})
+        serailzer = WorkspaceChannelSerializer(
+            data=request.data, context={"workspace_id": workspace_id}
+        )
 
         if serailzer.is_valid(raise_exception=True):
-            serailzer.save()
+            result = serailzer.save()
+            print(result)
+            if not result.get("status"):
+                return Response(
+                    {
+                        "message": result.get("message"),
+                        "status": status.HTTP_400_BAD_REQUEST,
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            return Response(
+                {
+                    "message": "Workspace channel retrieved successfully",
+                    "status": status.HTTP_200_OK,
+                    "data": result["data"],
+                },
+                status=status.HTTP_200_OK,
+            )
 
-        return Response({
-            "message": ""
-        }, status=status.HTTP_200_OK)
+        return Response(
+            {"message": serailzer.error_messages}, status=status.HTTP_400_BAD_REQUEST
+        )
