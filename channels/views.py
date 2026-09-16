@@ -9,9 +9,9 @@ from workspaces.permission import IsWorkspaceMember, HasWorkspacePermission
 
 
 class ChannelView(APIView):
-    def get_permissions(self):
-        method_permissions = {"GET": [AllowAny()], "POST": [IsSuperAdmin()]}
-        return method_permissions.get(self.request.method, [IsAuthenticated()])
+    # def get_permissions(self):
+    #     method_permissions = {"GET": [AllowAny()], "POST": [IsSuperAdmin()]}
+    #     return method_permissions.get(self.request.method, [IsAuthenticated()])
 
     def get(self, request):
         channel = Channel.objects.filter(is_active=True)
