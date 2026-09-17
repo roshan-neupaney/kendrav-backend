@@ -198,6 +198,8 @@ class WorkspaceChannelWithIdView(APIView):
 
 
 class WorkspaceChannelHealthView(APIView):
+    permission_classes = [IsWorkspaceMember]
+
     def get(self, request, workspace_channel_id):
         workspace_channel = (
             WorkspaceChannel.objects.prefetch_related("channel_config")
@@ -227,7 +229,7 @@ class WorkspaceChannelHealthView(APIView):
                 },
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        
+
         expires_at_dt = datetime.fromisoformat(expires_at) if expires_at else None
 
         if expires_at_dt and expires_at_dt < datetime.now(timezone.utc):

@@ -11,10 +11,18 @@ from .serializers import (
     RolePermissionSerializer,
     WorkspaceMemberPermissionSerializer,
     WorkspacePermissionSerializer,
+    WorkspaceMyTimeSerializer,
 )
 from rest_framework.response import Response
 from rest_framework import status
-from .models import Workspace, WorkspaceMember, WorkspaceMemberInvite, Role, Permission
+from .models import (
+    Workspace,
+    WorkspaceMember,
+    WorkspaceMemberInvite,
+    Role,
+    Permission,
+    MyTime,
+)
 from django.db.models import Q
 from rest_framework.permissions import IsAuthenticated
 from django.db import transaction
@@ -636,6 +644,141 @@ class WorkspacePermissionView(APIView):
                 "status": status.HTTP_200_OK,
                 "message": "Permissions retrived successfully",
                 "data": serializer.data,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+
+class WorkspaceMyTimeView(APIView):
+    def get_permissions(self):
+        permissions = {
+            "POST": [
+                IsAuthenticated(),
+                HasWorkspacePermission("my_time:can_create")(),
+            ],
+        }
+        return permissions.get(
+            self.request.method, [IsAuthenticated(), IsWorkspaceMember()]
+        )
+
+    def get(self, request, workspace_id):
+        my_times = MyTime.objects.filter(workspace=workspace_id)
+
+        serializer = WorkspaceMyTimeSerializer(my_times, many=True)
+
+        return Response(
+            {
+                "message": "Time slots retrived successfully",
+                "data": serializer.data,
+                "status": status.HTTP_200_OK,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+    def post(self, request, workspace_id):
+        data = request.data
+        data["workspace"] = workspace_id
+
+        my_time_exists = MyTime.objects.filter(
+            workspace=workspace_id, day=data.get("day"), time=data.get("time")
+        ).exists()
+
+        if my_time_exists:
+            return Response(
+                {
+                    "message": "Time slot already exists",
+                    "status": status.HTTP_400_BAD_REQUEST,
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        serializer = WorkspaceMyTimeSerializer(data=data)
+
+        if serializer.is_valid(raise_exception=True):
+            serializer.save()
+            return Response(
+                {
+                    "message": "Time slot created successfully",
+                    "data": serializer.data,
+                    "status": status.HTTP_200_OK,
+                },
+                status=status.HTTP_200_OK,
+            )
+        return Response(
+            {
+                "message": serializer.error_messages,
+                "status": status.HTTP_400_BAD_REQUEST,
+            },
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+
+class WorkspaceMyTimeWithIdView(APIView):
+    def get_permissions(self):
+            permissions = {
+                "PATCH": [
+                    IsAuthenticated(),
+                    HasWorkspacePermission("my_time:can_update")(),
+                ],
+                "DELETE": [
+                    IsAuthenticated(),
+                    HasWorkspacePermission("my_time:can_delete")(),
+                ],
+            }
+            return permissions.get(
+                self.request.method, [IsAuthenticated(), IsWorkspaceMember()]
+            )
+
+    def patch(self, request, workspace_id, my_time_id):
+        my_time = MyTime.objects.filter(id=my_time_id).first()
+
+        if my_time is None:
+            return Response(
+                {
+                    "message": "Time slot not found",
+                    "status": status.HTTP_400_BAD_REQUEST,
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        serializer = WorkspaceMyTimeSerializer(my_time, data=request.data, partial=True)
+
+        if serializer.is_valid(raise_exception=True):
+            serializer.save()
+            return Response(
+                {
+                    "message": "Time slot updated successfully",
+                    "data": serializer.data,
+                    "status": status.HTTP_200_OK,
+                },
+                status=status.HTTP_200_OK,
+            )
+        return Response(
+            {
+                "message": serializer.error_messages,
+                "status": status.HTTP_400_BAD_REQUEST,
+            },
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    def delete(self, request, workspace_id, my_time_id):
+        my_time = MyTime.objects.filter(id=my_time_id).first()
+
+        if my_time is None:
+            return Response(
+                {
+                    "message": "Time slot not found",
+                    "status": status.HTTP_400_BAD_REQUEST,
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        my_time.delete()
+
+        return Response(
+            {
+                "message": "Time slot deleted successfully",
+                "status": status.HTTP_200_OK,
             },
             status=status.HTTP_200_OK,
         )
