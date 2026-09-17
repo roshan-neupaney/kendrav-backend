@@ -29,6 +29,7 @@ class Post(models.Model):
     schedule_time = models.DateTimeField(blank=True, null=True)
     status = models.CharField(max_length=50, default='draft', choices=StatusChoices)
     remarks = models.TextField(blank=True, null=True)
+    workspace_channel_ids = models.JSONField(default=list, blank=True)
     pending_started_at = models.DateTimeField(blank=True, null=True)
     published_at = models.DateTimeField(blank=True, null=True)
     is_active = models.BooleanField(default=True)

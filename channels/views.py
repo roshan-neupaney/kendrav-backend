@@ -134,7 +134,7 @@ class WorkspaceChannelView(APIView):
             serailzer.save()
             return Response(
                 {
-                    "message": "Workspace channel retrieved successfully",
+                    "message": "Workspace channel created successfully",
                     "status": status.HTTP_200_OK,
                     "data": serailzer.data,
                 },
