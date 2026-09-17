@@ -30,16 +30,19 @@ class ChannelConfigSerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
-        config = data.pop('config')
-        config.pop('access_token')
-        data['config'] = config
+        config = data.pop("config")
+        config.pop("access_token")
+        data["config"] = config
         return data
+
 
 class WorkspaceChannelSerializer(serializers.ModelSerializer):
     channel = ChannelSerializer(read_only=True)
     channel_config = ChannelConfigSerializer(read_only=True)
 
-    channel_id = serializers.PrimaryKeyRelatedField(queryset=Channel.objects.all(), write_only=True)
+    channel_id = serializers.PrimaryKeyRelatedField(
+        queryset=Channel.objects.all(), write_only=True
+    )
     code = serializers.CharField(write_only=True)
 
     class Meta:
@@ -65,7 +68,6 @@ class WorkspaceChannelSerializer(serializers.ModelSerializer):
 
         workspace = Workspace.objects.filter(id=workspace_id, is_active=True).first()
 
-
         if workspace is None:
             raise serializers.ValidationError("Workspace not found")
 
@@ -74,7 +76,7 @@ class WorkspaceChannelSerializer(serializers.ModelSerializer):
         result = handler.exchange_token(code=code)
 
         if not result.get("status"):
-            raise serializers.ValidationError(result.get('message'))
+            raise serializers.ValidationError(result.get("message"))
 
         full_name = result.get("full_name", "")
         access_token = result.get("access_token", "")
@@ -82,23 +84,30 @@ class WorkspaceChannelSerializer(serializers.ModelSerializer):
         account_id = result.get("account_id", "")
         profile_picture = result.get("profile_picture", "")
 
-        workspace_channel_exist = WorkspaceChannel.objects.filter(channel=channel, workspace=workspace, account_id=account_id).exists()
-
-        if workspace_channel_exist:
-            raise serializers.ValidationError('User channel already exists')
-
-        workspace_channel = WorkspaceChannel.objects.create(
-            channel=channel,
-            workspace=workspace,
-            account_id=account_id,
-            full_name=full_name,
-            profile_picture=profile_picture,
-        )
-
         config = {
             "access_token": access_token,
             "expires_at": expires_at.isoformat() if expires_at else None,
         }
-        ChannelConfig.objects.create(workspace_channel=workspace_channel, config=config)
+
+        workspace_channel = WorkspaceChannel.objects.prefetch_related('channel_config').filter(
+            channel=channel, workspace=workspace, account_id=account_id
+        ).first()
+
+        if workspace_channel is None:
+            workspace_channel = WorkspaceChannel.objects.create(
+                channel=channel,
+                workspace=workspace,
+                account_id=account_id,
+                full_name=full_name,
+                profile_picture=profile_picture,
+            )
+            ChannelConfig.objects.create(workspace_channel=workspace_channel, config=config)
+        elif workspace_channel.is_active:
+            raise serializers.ValidationError('User channel already exists')
+        else:
+            workspace_channel.is_active=True
+            workspace_channel.channel_config.config = config
+            workspace_channel.save()
         
+
         return workspace_channel

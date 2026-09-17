@@ -142,3 +142,6 @@ class WorkspaceChannelView(APIView):
         return Response(
             {"message": serailzer.error_messages}, status=status.HTTP_400_BAD_REQUEST
         )
+
+    def delete(self, request, workspace_id, workspace_channel_id):
+        workspace_channel = WorkspaceChannel.objects.filter(id=workspace_channel_id, is_active=True).first()
