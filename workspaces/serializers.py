@@ -8,6 +8,7 @@ from .models import (
     WorkspaceMemberInvite,
     WorkspaceMemberRole,
     WorkspaceMemberPermission,
+    MyTime
 )
 from rest_framework import serializers
 from .utils import generate_workspace_slug
@@ -408,3 +409,10 @@ class WorkspacePermissionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Permission
         fields = ["id", "title"]
+
+
+class WorkspaceMyTimeSerializer(serializers.ModelSerializer):
+    workspace = serializers.PrimaryKeyRelatedField(queryset=Workspace.objects.all(), write_only=True)
+    class Meta:
+        model= MyTime
+        fields = ['id', 'day', 'time', 'workspace_id', 'is_active', 'created_at', 'updated_at', "workspace"]
