@@ -24,5 +24,6 @@ urlpatterns = [
     path("accounts/", include("allauth.urls")),
     path("api/v1/users/", include("users.urls")),
     path("api/v1/workspace/", include("workspaces.urls")),
+    path("api/v1/workspace/", include("channels.urls")),
     path("api/v1/channel/", include("channels.urls")),
 ]
