@@ -11,7 +11,6 @@ class IsWorkspaceMember(BasePermission):
         workspace_member = WorkspaceMember.objects.filter(
             user=user, workspace_id=workspace_id, is_active=True
         ).first()
-        # print(bool(workspace_member))
         return bool(workspace_member)
 
 
@@ -44,7 +43,7 @@ def HasWorkspacePermission(required_permission):
 
             for item in role_permissions:
                 member_role_permissions.append(item.permission.title)
-
+            
             member_permissions = workspace_member.member_permissions.select_related(
                 "permission"
             ).all()
