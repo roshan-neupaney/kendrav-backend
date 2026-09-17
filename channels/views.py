@@ -7,6 +7,7 @@ from .serializers import ChannelSerializer, WorkspaceChannelSerializer
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from workspaces.permission import IsWorkspaceMember, HasWorkspacePermission
 from .oauth_handlers import oauth_handler
+from datetime import datetime, timezone
 
 
 class ChannelView(APIView):
@@ -161,7 +162,8 @@ class WorkspaceChannelWithIdView(APIView):
 
     def post(self, request, workspace_id, workspace_channel_id):
         workspace_channel = (
-            WorkspaceChannel.objects.prefetch_related("channel_config").select_related('channel')
+            WorkspaceChannel.objects.prefetch_related("channel_config")
+            .select_related("channel")
             .filter(id=workspace_channel_id, is_active=True)
             .first()
         )
@@ -176,7 +178,7 @@ class WorkspaceChannelWithIdView(APIView):
             )
 
         config = workspace_channel.channel_config.config
-        access_token = config.get('access_token', '')
+        access_token = config.get("access_token", "")
 
         if access_token:
             handler = oauth_handler(workspace_channel.channel.slug_url)
@@ -189,6 +191,69 @@ class WorkspaceChannelWithIdView(APIView):
         return Response(
             {
                 "message": "Workspace Channel Disconnected Successfully",
+                "status": status.HTTP_200_OK,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+
+class WorkspaceChannelHealthView(APIView):
+    def get(self, request, workspace_channel_id):
+        workspace_channel = (
+            WorkspaceChannel.objects.prefetch_related("channel_config")
+            .select_related("channel")
+            .filter(id=workspace_channel_id, is_active=True)
+            .first()
+        )
+
+        if workspace_channel is None:
+            return Response(
+                {
+                    "message": "Workspace Channel not found",
+                    "status": status.HTTP_400_BAD_REQUEST,
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        config = workspace_channel.channel_config.config
+        access_token = config.get("access_token", "")
+        expires_at = config.get("expires_at", "")
+
+        if not access_token:
+            return Response(
+                {
+                    "message": "Token not found",
+                    "status": status.HTTP_400_BAD_REQUEST,
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        
+        expires_at_dt = datetime.fromisoformat(expires_at) if expires_at else None
+
+        if expires_at_dt and expires_at_dt < datetime.now(timezone.utc):
+            return Response(
+                {
+                    "message": "Token expired",
+                    "status": status.HTTP_400_BAD_REQUEST,
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        handler = oauth_handler(workspace_channel.channel.slug_url)
+
+        is_valid = handler.test_user_data(access_token)
+
+        if not is_valid:
+            return Response(
+                {
+                    "message": "Token invalid",
+                    "status": status.HTTP_400_BAD_REQUEST,
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        return Response(
+            {
+                "message": "Workspace channel is healthy",
                 "status": status.HTTP_200_OK,
             },
             status=status.HTTP_200_OK,

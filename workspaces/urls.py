@@ -15,7 +15,7 @@ from .views import (
     WorkspaceMemberPermissionView,
     WorkspacePermissionView,
 )
-from channels.views import WorkspaceChannelView, WorkspaceChannelWithIdView
+from channels.views import WorkspaceChannelView, WorkspaceChannelWithIdView, WorkspaceChannelHealthView
 
 urlpatterns = [
     path("", WorkspaceView.as_view(), name="workspace"),
@@ -90,6 +90,11 @@ urlpatterns = [
     path(
         "<int:workspace_id>/channel/<int:workspace_channel_id>/",
         WorkspaceChannelWithIdView.as_view(),
+        name="workspace-channel",
+    ),
+    path(
+        "channel/<int:workspace_channel_id>/",
+        WorkspaceChannelHealthView.as_view(),
         name="workspace-channel",
     ),
 ]

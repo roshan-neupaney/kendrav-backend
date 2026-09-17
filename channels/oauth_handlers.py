@@ -84,3 +84,14 @@ class FacebookHandler:
             f"https://graph.facebook.com/v26.0/{account_id}/permissions",
             params={"access_token": access_token},
         )
+
+    def test_user_data(self, access_token):
+        user_data = requests.get(
+            "https://graph.facebook.com/v26.0/me",
+            params={
+                "fields": "id,name",
+                "access_token": access_token,
+            },
+        ).json()
+        
+        return bool(not user_data.get('error') and user_data.get('id'))
