@@ -74,7 +74,7 @@ class WorkspaceChannelSerializer(serializers.ModelSerializer):
         result = handler.exchange_token(code=code)
 
         if not result.get("status"):
-            return result
+            raise serializers.ValidationError(result.get('message'))
 
         full_name = result.get("full_name", "")
         access_token = result.get("access_token", "")
@@ -100,7 +100,5 @@ class WorkspaceChannelSerializer(serializers.ModelSerializer):
             "expires_at": expires_at.isoformat() if expires_at else None,
         }
         ChannelConfig.objects.create(workspace_channel=workspace_channel, config=config)
-
-        serializer = WorkspaceChannelSerializer(workspace_channel)
-
-        return {"data": serializer.data, "status": True}
+        
+        return workspace_channel

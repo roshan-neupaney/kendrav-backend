@@ -6,11 +6,13 @@ class IsWorkspaceMember(BasePermission):
     def has_permission(self, request, view):
         workspace_id = request.headers.get('workspaceId')
         user = request.user
+        print(user)
         if not workspace_id:
             return False
         workspace_member = WorkspaceMember.objects.filter(
             user=user, workspace_id=workspace_id, is_active=True
         ).first()
+        print(workspace_member)
         # print(bool(workspace_member))
         return bool(workspace_member)
 
@@ -44,6 +46,8 @@ def HasWorkspacePermission(required_permission):
 
             for item in role_permissions:
                 member_role_permissions.append(item.permission.title)
+            
+            print('member_role_permissions', member_role_permissions)
 
             member_permissions = workspace_member.member_permissions.select_related(
                 "permission"
