@@ -32,10 +32,10 @@ class FacebookHandler:
     def exchange_token(self, code):
         token_result = self.exchange_code_for_token(code=code)
 
-        if not token_result.get('status'):
+        if not token_result.get("status"):
             return token_result
 
-        token = token_result.get('access_token', '')
+        token = token_result.get("access_token", "")
         res = requests.get(
             "https://graph.facebook.com/v26.0/oauth/access_token",
             params={
@@ -76,5 +76,11 @@ class FacebookHandler:
             "full_name": user_data.get("name", ""),
             "account_id": user_data.get("id", ""),
             "profile_picture": profile_picture,
-            "status": True
+            "status": True,
         }
+
+    def invalidate_token(self, account_id, access_token):
+        requests.delete(
+            f"https://graph.facebook.com/v26.0/{account_id}/permissions",
+            params={"access_token": access_token},
+        )

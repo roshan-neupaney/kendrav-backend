@@ -6,6 +6,7 @@ from .models import Channel, WorkspaceChannel
 from .serializers import ChannelSerializer, WorkspaceChannelSerializer
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from workspaces.permission import IsWorkspaceMember, HasWorkspacePermission
+from .oauth_handlers import oauth_handler
 
 
 class ChannelView(APIView):
@@ -160,7 +161,7 @@ class WorkspaceChannelWithIdView(APIView):
 
     def post(self, request, workspace_id, workspace_channel_id):
         workspace_channel = (
-            WorkspaceChannel.objects.prefetch_related("channel_config")
+            WorkspaceChannel.objects.prefetch_related("channel_config").select_related('channel')
             .filter(id=workspace_channel_id, is_active=True)
             .first()
         )
@@ -173,6 +174,13 @@ class WorkspaceChannelWithIdView(APIView):
                 },
                 status=status.HTTP_400_BAD_REQUEST,
             )
+
+        config = workspace_channel.channel_config.config
+        access_token = config.get('access_token', '')
+
+        if access_token:
+            handler = oauth_handler(workspace_channel.channel.slug_url)
+            handler.invalidate_token(workspace_channel.account_id, access_token)
 
         workspace_channel.is_active = False
         workspace_channel.channel_config.config = {}
