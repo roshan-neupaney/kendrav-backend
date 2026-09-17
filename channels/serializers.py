@@ -89,9 +89,11 @@ class WorkspaceChannelSerializer(serializers.ModelSerializer):
             "expires_at": expires_at.isoformat() if expires_at else None,
         }
 
-        workspace_channel = WorkspaceChannel.objects.prefetch_related('channel_config').filter(
-            channel=channel, workspace=workspace, account_id=account_id
-        ).first()
+        workspace_channel = (
+            WorkspaceChannel.objects.prefetch_related("channel_config")
+            .filter(channel=channel, workspace=workspace, account_id=account_id)
+            .first()
+        )
 
         if workspace_channel is None:
             workspace_channel = WorkspaceChannel.objects.create(
@@ -101,13 +103,25 @@ class WorkspaceChannelSerializer(serializers.ModelSerializer):
                 full_name=full_name,
                 profile_picture=profile_picture,
             )
-            ChannelConfig.objects.create(workspace_channel=workspace_channel, config=config)
+            ChannelConfig.objects.create(
+                workspace_channel=workspace_channel, config=config
+            )
         elif workspace_channel.is_active:
-            raise serializers.ValidationError('User channel already exists')
+            if not hasattr(workspace_channel, "channel_config"):
+                ChannelConfig.objects.create(
+                    workspace_channel=workspace_channel, config=config
+                )
+            raise serializers.ValidationError("Workspace channel already exists")
         else:
-            workspace_channel.is_active=True
-            workspace_channel.channel_config.config = config
+            workspace_channel.is_active = True
+            if hasattr(workspace_channel, "channel_config"):
+                workspace_channel.channel_config.config = config
+                workspace_channel.channel_config.save()
+            else:
+                ChannelConfig.objects.create(
+                    workspace_channel=workspace_channel, config=config
+                )
+
             workspace_channel.save()
-        
 
         return workspace_channel

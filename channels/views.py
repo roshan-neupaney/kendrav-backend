@@ -140,8 +140,48 @@ class WorkspaceChannelView(APIView):
             )
 
         return Response(
-            {"message": serailzer.error_messages}, status=status.HTTP_400_BAD_REQUEST
+            {
+                "message": serailzer.error_messages,
+                "status": status.HTTP_400_BAD_REQUEST,
+            },
+            status=status.HTTP_400_BAD_REQUEST,
         )
 
-    def delete(self, request, workspace_id, workspace_channel_id):
-        workspace_channel = WorkspaceChannel.objects.filter(id=workspace_channel_id, is_active=True).first()
+
+class WorkspaceChannelWithIdView(APIView):
+    def get_permissions(self):
+        method_permissions = {
+            "POST": [
+                IsAuthenticated(),
+                HasWorkspacePermission("channels:can_disconnect")(),
+            ],
+        }
+        return method_permissions.get(self.request.method, [IsAuthenticated()])
+
+    def post(self, request, workspace_id, workspace_channel_id):
+        workspace_channel = (
+            WorkspaceChannel.objects.prefetch_related("channel_config")
+            .filter(id=workspace_channel_id, is_active=True)
+            .first()
+        )
+
+        if workspace_channel is None:
+            return Response(
+                {
+                    "message": "Workspace Channel not found",
+                    "status": status.HTTP_400_BAD_REQUEST,
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        workspace_channel.is_active = False
+        workspace_channel.channel_config.config = {}
+        workspace_channel.channel_config.save()
+        workspace_channel.save()
+        return Response(
+            {
+                "message": "Workspace Channel Disconnected Successfully",
+                "status": status.HTTP_200_OK,
+            },
+            status=status.HTTP_200_OK,
+        )

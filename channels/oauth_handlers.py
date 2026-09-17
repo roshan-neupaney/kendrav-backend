@@ -21,7 +21,6 @@ class FacebookHandler:
                 "code": code,
             },
         ).json()
-        print(res)
         access_token = res.get("access_token", "")
         if access_token:
             return {"access_token": access_token, "status": True}
@@ -47,7 +46,6 @@ class FacebookHandler:
                 "fb_exchange_token": token,
             },
         ).json()
-
         error = res.get("error", "")
         if error:
             return {"message": error["message"], "status": False}
