@@ -20,7 +20,21 @@ class PostView(APIView):
         )
 
     def get(self, request, workspace_id):
+
+        created_by= request.query_params.get('created_by')
+        post_status= request.query_params.get('status')
+        start_date= request.query_params.get('start_date')
+        end_date= request.query_params.get('end_date')
+        sort_by= request.query_params.get('sort_by')
+
         posts = Post.objects.filter(workspace=workspace_id, is_active=True)
+
+        if created_by:
+            posts.filter(created_by=created_by)
+        if post_status:
+            posts.filter(status=post_status)
+        if start_date and end_date:
+            posts.filter(published_at__gt=start_date, published_at__lt=end_date)
 
         serializer = PostSerializer(posts, many=True)
 
