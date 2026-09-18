@@ -67,6 +67,10 @@ REST_FRAMEWORK = {
         "rest_framework.permissions.IsAuthenticated",
     ],
     "EXCEPTION_HANDLER": "authentication.exceptions.custom_exception_handler",
+    'DEFAULT_PAGINATION_CLASS': (
+        'posts.pagination.StandardCursorPagination'
+    ),
+    'PAGE_SIZE': 20,
 }
 
 REST_AUTH = {

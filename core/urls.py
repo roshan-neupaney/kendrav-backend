@@ -26,4 +26,5 @@ urlpatterns = [
     path("api/v1/workspace/", include("workspaces.urls")),
     path("api/v1/workspace/", include("channels.urls")),
     path("api/v1/channel/", include("channels.urls")),
+    path("api/v1/workspace/<int:workspace_id>/post/", include("posts.urls")),
 ]

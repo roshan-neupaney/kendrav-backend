@@ -5,9 +5,13 @@ from workspaces.permission import IsWorkspaceMember, HasWorkspacePermission
 from rest_framework.permissions import IsAuthenticated
 from .models import Post
 from .serializers import PostSerializer
+from .pagination import StandardCursorPagination
+from datetime import datetime, timezone
 
 
 class PostView(APIView):
+    pagination_class = StandardCursorPagination
+
     def get_permissions(self):
         permissions = {
             "POST": [
@@ -21,38 +25,60 @@ class PostView(APIView):
 
     def get(self, request, workspace_id):
 
-        created_by= request.query_params.get('created_by')
-        post_status= request.query_params.get('status')
-        start_date= request.query_params.get('start_date')
-        end_date= request.query_params.get('end_date')
-        sort_by= request.query_params.get('sort_by')
+        sortable_fields = ["created_at", "updated_at", "published_at", "schedule_time"]
+
+        created_by = request.query_params.get("created_by", "")
+        created_by_list = created_by.split(",") if created_by else []
+        post_status = request.query_params.get("status")
+        start_date = request.query_params.get("start_date")
+        end_date = request.query_params.get("end_date")
+        sort_by = request.query_params.get("sort_by")
 
         posts = Post.objects.filter(workspace=workspace_id, is_active=True)
 
-        if created_by:
-            posts.filter(created_by=created_by)
+        if len(created_by_list) > 0:
+            posts = posts.filter(created_by__in=created_by_list)
+
         if post_status:
-            posts.filter(status=post_status)
+            posts = posts.filter(status=post_status)
+
         if start_date and end_date:
-            posts.filter(published_at__gt=start_date, published_at__lt=end_date)
+            start_date_dt = datetime.fromisoformat(start_date)
+            end_date_dt = datetime.fromisoformat(end_date)
+            if start_date_dt > end_date_dt:
+                return Response(
+                    {
+                        "status": status.HTTP_400_BAD_REQUEST,
+                        "message": "End date cannot be past of start date",
+                    }
+                )
+            posts = posts.filter(published_at__gt=start_date_dt, published_at__lt=end_date_dt)
 
-        serializer = PostSerializer(posts, many=True)
+        if sort_by and sort_by in sortable_fields:
+            posts = posts.order_by(sort_by)
 
+        paginator = self.pagination_class()
+        paginated_post = paginator.paginate_queryset(posts, request=request, view=self)
+
+        serializer = PostSerializer(paginated_post, many=True)
+
+        result = paginator.get_paginated_response(serializer.data)
         return Response(
             {
                 "status": status.HTTP_200_OK,
                 "message": "Posts retrived successfully",
-                "data": serializer.data,
+                "data": result.data,
             }
         )
 
     def post(self, request, workspace_id):
         serailzer = PostSerializer(
-            data=request.data, context={"workspace_id": workspace_id, 'request': request}
+            data=request.data,
+            context={"workspace_id": workspace_id, "request": request},
         )
 
         if serailzer.is_valid(raise_exception=True):
-            serailzer.save()
+            serailzer.save(created_by=request.user)
             return Response(
                 {
                     "message": "Post created esuccessfully",

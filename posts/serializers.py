@@ -29,11 +29,11 @@ class PostSerializer(serializers.ModelSerializer):
     class Meta:
         model = Post
         fields = "__all__"
+        read_only_fields = ['created_by', 'workspace']
 
     def create(self, validated_data):
         post_media = validated_data.pop("post_media", [])
         workspace_id = self.context.get("workspace_id")
-        user = self.context.get("request").user
 
         workspace = Workspace.objects.filter(id=workspace_id, is_active=True).first()
 
@@ -41,7 +41,7 @@ class PostSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Workspace not found")
 
         post = Post.objects.create(
-            **validated_data, workspace=workspace, created_by=user
+            **validated_data, workspace=workspace
         )
 
         instance = [PostMedia(**media, post=post) for media in post_media]
