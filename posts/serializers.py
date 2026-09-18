@@ -3,6 +3,7 @@ from .models import Post, PostMedia
 from channels.models import ChannelPost
 from channels.serializers import WorkspaceChannelSerializer
 from workspaces.models import Workspace
+from datetime import datetime, timezone
 
 
 class PostMediaSerializer(serializers.ModelSerializer):
@@ -29,7 +30,26 @@ class PostSerializer(serializers.ModelSerializer):
     class Meta:
         model = Post
         fields = "__all__"
-        read_only_fields = ['created_by', 'workspace']
+        read_only_fields = ["created_by", "workspace"]
+
+    def validate(self, attrs):
+        schedule_time = attrs.get("schedule_time", "")
+        schedule_date = attrs.get("schedule_date", "")
+
+        if bool(schedule_date) ^ bool(schedule_time):
+            raise serializers.ValidationError("Both schedule date and time is requried")
+
+        elif schedule_date and schedule_time:
+            current_date = datetime.now(timezone.utc)
+            schedule_date_time = datetime.combine(
+                schedule_date, schedule_time, tzinfo=timezone.utc
+            )
+            if current_date > schedule_date_time:
+                raise serializers.ValidationError(
+                    "Schedule date time cannot be in past"
+                )
+
+        return attrs
 
     def create(self, validated_data):
         post_media = validated_data.pop("post_media", [])
@@ -40,9 +60,7 @@ class PostSerializer(serializers.ModelSerializer):
         if workspace is None:
             raise serializers.ValidationError("Workspace not found")
 
-        post = Post.objects.create(
-            **validated_data, workspace=workspace
-        )
+        post = Post.objects.create(**validated_data, workspace=workspace)
 
         instance = [PostMedia(**media, post=post) for media in post_media]
 
