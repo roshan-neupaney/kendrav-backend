@@ -34,7 +34,9 @@ class PostView(APIView):
         end_date = request.query_params.get("end_date")
         sort_by = request.query_params.get("sort_by")
 
-        posts = Post.objects.prefetch_related('post_medias').filter(workspace=workspace_id, is_active=True)
+        posts = Post.objects.prefetch_related("post_medias").filter(
+            workspace=workspace_id, is_active=True
+        )
 
         if len(created_by_list) > 0:
             posts = posts.filter(created_by__in=created_by_list)
@@ -52,7 +54,9 @@ class PostView(APIView):
                         "message": "End date cannot be past of start date",
                     }
                 )
-            posts = posts.filter(published_at__gt=start_date_dt, published_at__lt=end_date_dt)
+            posts = posts.filter(
+                published_at__gt=start_date_dt, published_at__lt=end_date_dt
+            )
 
         if sort_by and sort_by in sortable_fields:
             posts = posts.order_by(sort_by)
@@ -68,29 +72,80 @@ class PostView(APIView):
                 "status": status.HTTP_200_OK,
                 "message": "Posts retrived successfully",
                 "data": result.data,
-            }
+            }, status=status.HTTP_200_OK
         )
 
     def post(self, request, workspace_id):
-        serailzer = PostSerializer(
+        serializer = PostSerializer(
             data=request.data,
             context={"workspace_id": workspace_id, "request": request},
         )
 
-        if serailzer.is_valid(raise_exception=True):
-            serailzer.save(created_by=request.user)
+        if serializer.is_valid(raise_exception=True):
+            serializer.save(created_by=request.user)
             return Response(
                 {
                     "message": "Post created esuccessfully",
                     "status": status.HTTP_200_OK,
-                    "data": serailzer.data,
+                    "data": serializer.data,
                 },
                 status=status.HTTP_200_OK,
             )
 
         return Response(
             {
-                "message": serailzer.error_messages,
+                "message": serializer.error_messages,
+                "status": status.HTTP_400_BAD_REQUEST,
+            },
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+
+class PostWithIdView(APIView):
+    def get(self, request, workspace_id, post_id):
+        post = Post.objects.filter(id=post_id).first()
+
+        if not post:
+            return Response(
+                {"message": "Post not found", "status": status.HTTP_400_BAD_REQUEST},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        serializer = PostSerializer(post)
+
+        return Response(
+            {
+                "message": "Post retrived esuccessfully",
+                "status": status.HTTP_200_OK,
+                "data": serializer.data,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+    def patch(self, request, workspace_id, post_id):
+        post = Post.objects.filter(id=post_id).first()
+
+        serializer = PostSerializer(
+            post,
+            data=request.data,
+            context={"workspace_id": workspace_id, "request": request},
+            partial=True
+        )
+
+        if serializer.is_valid(raise_exception=True):
+            serializer.save(created_by=request.user)
+            return Response(
+                {
+                    "message": "Post created esuccessfully",
+                    "status": status.HTTP_200_OK,
+                    "data": serializer.data,
+                },
+                status=status.HTTP_200_OK,
+            )
+
+        return Response(
+            {
+                "message": serializer.error_messages,
                 "status": status.HTTP_400_BAD_REQUEST,
             },
             status=status.HTTP_400_BAD_REQUEST,
