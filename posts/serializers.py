@@ -31,6 +31,7 @@ class PostSerializer(serializers.ModelSerializer):
         model = Post
         fields = "__all__"
         read_only_fields = ["created_by", "workspace"]
+        # extra_kwargs = {"post_media": {"read_only": True}}
 
     def validate(self, attrs):
         schedule_time = attrs.get("schedule_time", "")

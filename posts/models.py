@@ -41,6 +41,6 @@ class PostMedia(models.Model):
     media_url = models.CharField(max_length=300)
     media_type = models.CharField(max_length=50, choices=MediaTypeChoices)
     order = models.IntegerField(default=0)
-    post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='post_media')
+    post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='post_medias')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

@@ -3,7 +3,7 @@ from rest_framework.response import Response
 from urllib.parse import urlparse, parse_qs
 
 class StandardCursorPagination(CursorPagination):
-    page_size=2
+    page_size=20
     page_size_query_param='page_size'
     max_page_size = 100
     ordering='id'

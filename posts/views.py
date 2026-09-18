@@ -34,7 +34,7 @@ class PostView(APIView):
         end_date = request.query_params.get("end_date")
         sort_by = request.query_params.get("sort_by")
 
-        posts = Post.objects.filter(workspace=workspace_id, is_active=True)
+        posts = Post.objects.prefetch_related('post_medias').filter(workspace=workspace_id, is_active=True)
 
         if len(created_by_list) > 0:
             posts = posts.filter(created_by__in=created_by_list)
