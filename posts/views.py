@@ -86,7 +86,7 @@ class PostView(APIView):
             serializer.save(created_by=request.user)
             return Response(
                 {
-                    "message": "Post created esuccessfully",
+                    "message": "Post created successfully",
                     "status": status.HTTP_201_CREATED,
                     "data": serializer.data,
                 },
@@ -104,19 +104,19 @@ class PostView(APIView):
 
 class PostWithIdView(APIView):
     def get_permissions(self):
-            permissions = {
-                "PATCH": [
-                    IsAuthenticated(),
-                    HasWorkspacePermission("post:can_update")(),
-                ],
-                "DELETE": [
-                    IsAuthenticated(),
-                    HasWorkspacePermission("post:can_delete")(),
-                ],
-            }
-            return permissions.get(
-                self.request.method, [IsAuthenticated(), IsWorkspaceMember()]
-            )
+        permissions = {
+            "PATCH": [
+                IsAuthenticated(),
+                HasWorkspacePermission("post:can_update")(),
+            ],
+            "DELETE": [
+                IsAuthenticated(),
+                HasWorkspacePermission("post:can_delete")(),
+            ],
+        }
+        return permissions.get(
+            self.request.method, [IsAuthenticated(), IsWorkspaceMember()]
+        )
 
     def get(self, request, workspace_id, post_id):
         post = Post.objects.filter(id=post_id).first()
@@ -131,7 +131,7 @@ class PostWithIdView(APIView):
 
         return Response(
             {
-                "message": "Post retrived esuccessfully",
+                "message": "Post retrived successfully",
                 "status": status.HTTP_200_OK,
                 "data": serializer.data,
             },
@@ -139,11 +139,7 @@ class PostWithIdView(APIView):
         )
 
     def patch(self, request, workspace_id, post_id):
-        post = (
-            Post.objects.prefetch_related("post_medias")
-            .filter(id=post_id, is_active=True)
-            .first()
-        )
+        post = Post.objects.filter(id=post_id, is_active=True).first()
 
         if not post:
             return Response(
@@ -162,7 +158,7 @@ class PostWithIdView(APIView):
             serializer.save(created_by=request.user)
             return Response(
                 {
-                    "message": "Post updated esuccessfully",
+                    "message": "Post updated successfully",
                     "status": status.HTTP_200_OK,
                     "data": serializer.data,
                 },
@@ -178,11 +174,7 @@ class PostWithIdView(APIView):
         )
 
     def delete(self, request, workspace_id, post_id):
-        post = (
-            Post.objects.prefetch_related("post_medias")
-            .filter(id=post_id, is_active=True)
-            .first()
-        )
+        post = Post.objects.filter(id=post_id, is_active=True).first()
 
         if not post:
             return Response(
@@ -195,7 +187,7 @@ class PostWithIdView(APIView):
 
         return Response(
             {
-                "message": "Post deleted esuccessfully",
+                "message": "Post deleted successfully",
                 "status": status.HTTP_200_OK,
             },
             status=status.HTTP_200_OK,
