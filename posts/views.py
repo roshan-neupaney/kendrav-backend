@@ -103,6 +103,21 @@ class PostView(APIView):
 
 
 class PostWithIdView(APIView):
+    def get_permissions(self):
+            permissions = {
+                "PATCH": [
+                    IsAuthenticated(),
+                    HasWorkspacePermission("post:can_update")(),
+                ],
+                "DELETE": [
+                    IsAuthenticated(),
+                    HasWorkspacePermission("post:can_delete")(),
+                ],
+            }
+            return permissions.get(
+                self.request.method, [IsAuthenticated(), IsWorkspaceMember()]
+            )
+
     def get(self, request, workspace_id, post_id):
         post = Post.objects.filter(id=post_id).first()
 
@@ -124,7 +139,11 @@ class PostWithIdView(APIView):
         )
 
     def patch(self, request, workspace_id, post_id):
-        post = Post.objects.prefetch_related('post_medias').filter(id=post_id, is_active=True).first()
+        post = (
+            Post.objects.prefetch_related("post_medias")
+            .filter(id=post_id, is_active=True)
+            .first()
+        )
 
         if not post:
             return Response(
@@ -158,4 +177,26 @@ class PostWithIdView(APIView):
             status=status.HTTP_400_BAD_REQUEST,
         )
 
-    # def delete(self, request, workspace_id, post_id):
+    def delete(self, request, workspace_id, post_id):
+        post = (
+            Post.objects.prefetch_related("post_medias")
+            .filter(id=post_id, is_active=True)
+            .first()
+        )
+
+        if not post:
+            return Response(
+                {"message": "Post not found", "status": status.HTTP_400_BAD_REQUEST},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        post.is_active = False
+        post.save()
+
+        return Response(
+            {
+                "message": "Post deleted esuccessfully",
+                "status": status.HTTP_200_OK,
+            },
+            status=status.HTTP_200_OK,
+        )
