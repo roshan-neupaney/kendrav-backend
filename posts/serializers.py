@@ -20,12 +20,20 @@ class ChannelPostSerializer(serializers.ModelSerializer):
 
 
 class PostSerializer(serializers.ModelSerializer):
-    post_medias = PostMediaSerializer(read_only=True, many=True)
+    post_medias = serializers.SerializerMethodField()
     channel_posts = ChannelPostSerializer(read_only=True, many=True)
 
     post_media = serializers.ListField(
         child=serializers.DictField(), write_only=True, required=False
     )
+
+    delete_medias = serializers.ListField(
+        child=serializers.IntegerField(), required=False, write_only=True
+    )
+
+    def get_post_medias(self, instance):
+        active_medias = instance.post_medias.filter(is_active=True)
+        return PostMediaSerializer(active_medias, many=True).data
 
     class Meta:
         model = Post
@@ -70,6 +78,7 @@ class PostSerializer(serializers.ModelSerializer):
 
     def update(self, instance, validated_data):
         post_media = validated_data.pop("post_media", None)
+        delete_medias = validated_data.pop("delete_medias", None)
 
         for key, value in validated_data.items():
             setattr(instance, key, value)
@@ -97,11 +106,20 @@ class PostSerializer(serializers.ModelSerializer):
                     create_media_instance = PostMedia(**item, post=instance)
                     objects_to_create.append(create_media_instance)
 
+            if delete_medias and len(delete_medias) > 0:
+                delete_instances = PostMedia.objects.filter(id__in=delete_medias)
+                for delete_instance in delete_instances:
+                    delete_instance.is_active = False
+                    fields_to_update.add("is_active")
+                    objects_to_update.append(delete_instance)
+
             if objects_to_create:
                 PostMedia.objects.bulk_create(objects_to_create)
 
             if objects_to_update and fields_to_update:
-                PostMedia.objects.bulk_update(objects_to_update, fields=fields_to_update)
+                PostMedia.objects.bulk_update(
+                    objects_to_update, fields=fields_to_update
+                )
 
         instance.save()
 

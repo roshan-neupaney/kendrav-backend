@@ -124,7 +124,7 @@ class PostWithIdView(APIView):
         )
 
     def patch(self, request, workspace_id, post_id):
-        post = Post.objects.filter(id=post_id).first()
+        post = Post.objects.prefetch_related('post_medias').filter(id=post_id, is_active=True).first()
 
         if not post:
             return Response(
@@ -157,3 +157,5 @@ class PostWithIdView(APIView):
             },
             status=status.HTTP_400_BAD_REQUEST,
         )
+
+    # def delete(self, request, workspace_id, post_id):
