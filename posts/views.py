@@ -72,7 +72,8 @@ class PostView(APIView):
                 "status": status.HTTP_200_OK,
                 "message": "Posts retrived successfully",
                 "data": result.data,
-            }, status=status.HTTP_200_OK
+            },
+            status=status.HTTP_200_OK,
         )
 
     def post(self, request, workspace_id):
@@ -86,10 +87,10 @@ class PostView(APIView):
             return Response(
                 {
                     "message": "Post created esuccessfully",
-                    "status": status.HTTP_200_OK,
+                    "status": status.HTTP_201_CREATED,
                     "data": serializer.data,
                 },
-                status=status.HTTP_200_OK,
+                status=status.HTTP_201_CREATED,
             )
 
         return Response(
@@ -125,18 +126,24 @@ class PostWithIdView(APIView):
     def patch(self, request, workspace_id, post_id):
         post = Post.objects.filter(id=post_id).first()
 
+        if not post:
+            return Response(
+                {"message": "Post not found", "status": status.HTTP_400_BAD_REQUEST},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
         serializer = PostSerializer(
             post,
             data=request.data,
             context={"workspace_id": workspace_id, "request": request},
-            partial=True
+            partial=True,
         )
 
         if serializer.is_valid(raise_exception=True):
             serializer.save(created_by=request.user)
             return Response(
                 {
-                    "message": "Post created esuccessfully",
+                    "message": "Post updated esuccessfully",
                     "status": status.HTTP_200_OK,
                     "data": serializer.data,
                 },

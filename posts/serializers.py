@@ -67,3 +67,42 @@ class PostSerializer(serializers.ModelSerializer):
         PostMedia.objects.bulk_create(instance)
 
         return post
+
+    def update(self, instance, validated_data):
+        post_media = validated_data.pop("post_media", None)
+
+        for key, value in validated_data.items():
+            setattr(instance, key, value)
+
+        if post_media and len(post_media) > 0:
+            fields_to_update = set()
+
+            objects_to_create = []
+            objects_to_update = []
+
+            for item in post_media:
+                post_media_id = item.pop("id", None)
+
+                if post_media_id:
+                    update_media_instance = PostMedia(id=post_media_id, post=instance)
+
+                    for key, value in item.items():
+                        if key != "id":
+                            setattr(update_media_instance, key, value)
+                            fields_to_update.add(key)
+
+                    objects_to_update.append(update_media_instance)
+
+                else:
+                    create_media_instance = PostMedia(**item, post=instance)
+                    objects_to_create.append(create_media_instance)
+
+            if objects_to_create:
+                PostMedia.objects.bulk_create(objects_to_create)
+
+            if objects_to_update and fields_to_update:
+                PostMedia.objects.bulk_update(objects_to_update, fields=fields_to_update)
+
+        instance.save()
+
+        return instance
