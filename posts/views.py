@@ -4,7 +4,7 @@ from rest_framework import status
 from workspaces.permission import IsWorkspaceMember, HasWorkspacePermission
 from rest_framework.permissions import IsAuthenticated
 from .models import Post
-from .serializers import PostSerializer
+from .serializers import PostSerializer, PostPublishSerializer
 from .pagination import StandardCursorPagination
 from datetime import datetime, timezone
 
@@ -191,4 +191,58 @@ class PostWithIdView(APIView):
                 "status": status.HTTP_200_OK,
             },
             status=status.HTTP_200_OK,
+        )
+
+
+class PostPublishView(APIView):
+    def get_permissions(self):
+        permissions = {
+            "PATCH  ": [
+                IsAuthenticated(),
+                HasWorkspacePermission("post:can_publish")(),
+            ],
+        }
+        return permissions.get(
+            self.request.method, [IsAuthenticated(), IsWorkspaceMember()]
+        )
+
+    def patch(self, request, workspace_id, post_id):
+        post = Post.objects.filter(
+            workspace_id=workspace_id, id=post_id, is_active=True
+        ).first()
+
+        if not post:
+            return Response(
+                {"message": "Post not found", "status": status.HTTP_400_BAD_REQUEST},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        serializer = PostPublishSerializer(post, data=request.data, partial=True)
+
+        if serializer.is_valid(raise_exception=True):
+            serializer.save()
+            post_status = request.data.get("status")
+            message = ''
+            if post_status == 'draft':
+                message = 'Post saved as draft'
+            elif post_status == 'schedule' or post_status == 'my_time':
+                message = "Post scheduled successfully"
+            elif post_status == 'now':
+                message = "Publishing..."
+
+            return Response(
+                {
+                    "message": message,
+                    "status": status.HTTP_200_OK,
+                    "data": serializer.data,
+                },
+                status=status.HTTP_200_OK,
+            )
+
+        return Response(
+            {
+                "message": serializer.error_messages,
+                "status": status.HTTP_400_BAD_REQUEST,
+            },
+            status=status.HTTP_400_BAD_REQUEST,
         )

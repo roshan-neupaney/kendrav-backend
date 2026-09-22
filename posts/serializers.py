@@ -1,9 +1,10 @@
 from rest_framework import serializers
 from .models import Post, PostMedia
-from channels.models import ChannelPost
+from channels.models import ChannelPost, WorkspaceChannel
 from channels.serializers import WorkspaceChannelSerializer
 from workspaces.models import Workspace
 from datetime import datetime, timezone
+from .tasks import publish_post_to_channel
 
 
 class PostMediaSerializer(serializers.ModelSerializer):
@@ -120,6 +121,44 @@ class PostSerializer(serializers.ModelSerializer):
                 PostMedia.objects.bulk_update(
                     objects_to_update, fields=fields_to_update
                 )
+
+        instance.save()
+
+        return instance
+
+
+class PostPublishSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Post
+        fields = "__all__"
+
+    def update(self, instance, validated_data):
+        status = validated_data.get("status", "")
+
+        if status == "draft":
+            instance.status = "draft"
+            return instance.save()
+        else:
+            instance.status = "pending"
+            workspace_channel_ids = instance.workspace_channel_ids
+            if workspace_channel_ids and len(workspace_channel_ids) > 0:
+                workspace_channel_existing_ids = ChannelPost.objects.filter(
+                    workspace_channel__in=workspace_channel_ids, post=instance
+                ).values_list("workspace_channel")
+                channel_post_instances = []
+                for id in workspace_channel_ids:
+                    if id not in workspace_channel_existing_ids:
+                        channel_post_instance = ChannelPost(
+                            workspace_channel=id, post=instance
+                        )
+                        channel_post_instances.append(channel_post_instance)
+
+                ChannelPost.objects.bulk_create(channel_post_instances)
+            else:
+                serializers.ValidationError("At least one channel is required")
+            
+            if status == 'now':
+                publish_post_to_channel.delay()
 
         instance.save()
 
