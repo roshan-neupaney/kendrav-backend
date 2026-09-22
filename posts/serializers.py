@@ -2,9 +2,11 @@ from rest_framework import serializers
 from .models import Post, PostMedia
 from channels.models import ChannelPost, WorkspaceChannel
 from channels.serializers import WorkspaceChannelSerializer
-from workspaces.models import Workspace
-from datetime import datetime, timezone
+from workspaces.models import Workspace, MyTime
+from datetime import datetime, timezone, timedelta
 from .tasks import publish_post_to_channel
+from zoneinfo import ZoneInfo
+from .utils import convert_to_user_timezone
 
 
 class PostMediaSerializer(serializers.ModelSerializer):
@@ -32,6 +34,9 @@ class PostSerializer(serializers.ModelSerializer):
         child=serializers.IntegerField(), required=False, write_only=True
     )
 
+    schedule_date = serializers.DateField(required=False, write_only=True)
+    schedule_time = serializers.TimeField(required=False, write_only=True)
+
     def get_post_medias(self, instance):
         active_medias = instance.post_medias.filter(is_active=True)
         return PostMediaSerializer(active_medias, many=True).data
@@ -42,21 +47,24 @@ class PostSerializer(serializers.ModelSerializer):
         read_only_fields = ["created_by", "workspace"]
 
     def validate(self, attrs):
-        schedule_time = attrs.get("schedule_time", "")
-        schedule_date = attrs.get("schedule_date", "")
+        schedule_time = attrs.pop("schedule_time", "")
+        schedule_date = attrs.pop("schedule_date", "")
 
-        if bool(schedule_date) ^ bool(schedule_time):
-            raise serializers.ValidationError("Both schedule date and time is requried")
-
-        elif schedule_date and schedule_time:
+        if schedule_date and schedule_time:
+            user_timezone = self.context.get("request").user.preference.timezone
             current_date = datetime.now(timezone.utc)
-            schedule_date_time = datetime.combine(
-                schedule_date, schedule_time, tzinfo=timezone.utc
+            schedule_date_time = datetime.combine(schedule_date, schedule_time)
+
+            schedule_dt_utc = convert_to_user_timezone(
+                user_timezone=user_timezone, date_time=schedule_date_time
             )
-            if current_date > schedule_date_time:
+
+            if current_date > schedule_dt_utc:
                 raise serializers.ValidationError(
                     "Schedule date time cannot be in past"
                 )
+
+            attrs["schedule_date_time"] = schedule_dt_utc
 
         return attrs
 
@@ -128,37 +136,128 @@ class PostSerializer(serializers.ModelSerializer):
 
 
 class PostPublishSerializer(serializers.ModelSerializer):
+    post_status = serializers.CharField(
+        required=False,
+        write_only=True,
+    )
+
     class Meta:
         model = Post
         fields = "__all__"
 
     def update(self, instance, validated_data):
-        status = validated_data.get("status", "")
+        post_status = validated_data.get("post_status", "")
+        workspace_id = self.context.get("workspace_id")
+        user = self.context.get("request").user
 
-        if status == "draft":
+        if post_status == "draft":
             instance.status = "draft"
-            return instance.save()
+            instance.save()
+            return instance
         else:
             instance.status = "pending"
             workspace_channel_ids = instance.workspace_channel_ids
-            if workspace_channel_ids and len(workspace_channel_ids) > 0:
-                workspace_channel_existing_ids = ChannelPost.objects.filter(
-                    workspace_channel__in=workspace_channel_ids, post=instance
-                ).values_list("workspace_channel")
-                channel_post_instances = []
-                for id in workspace_channel_ids:
-                    if id not in workspace_channel_existing_ids:
-                        channel_post_instance = ChannelPost(
-                            workspace_channel=id, post=instance
-                        )
-                        channel_post_instances.append(channel_post_instance)
 
-                ChannelPost.objects.bulk_create(channel_post_instances)
-            else:
-                serializers.ValidationError("At least one channel is required")
-            
-            if status == 'now':
+            if not workspace_channel_ids and not len(workspace_channel_ids) > 0:
+                raise serializers.ValidationError("At least one channel is required")
+
+            existing_post_channel = ChannelPost.objects.filter(post=instance)
+            channel_post_instances = []
+
+            existing_post_channel_list = list(
+                existing_post_channel.values_list("workspace_channel_id", flat=True)
+            )
+
+            new_channels = [
+                id
+                for id in workspace_channel_ids
+                if id not in existing_post_channel_list
+            ]
+
+            removed_channels = [
+                id
+                for id in existing_post_channel_list
+                if id not in workspace_channel_ids
+            ]
+
+            for id in new_channels:
+                workspace_channel = WorkspaceChannel.objects.filter(
+                    id=id, is_active=True
+                ).first()
+                if workspace_channel:
+                    channel_post_instance = ChannelPost(
+                        workspace_channel=workspace_channel, post=instance
+                    )
+                    channel_post_instances.append(channel_post_instance)
+            ChannelPost.objects.bulk_create(channel_post_instances)
+
+            for id in removed_channels:
+                removed_channel_post = existing_post_channel.filter(
+                    workspace_channel=id
+                ).first()
+                removed_channel_post.delete()
+
+            if post_status == "now":
                 publish_post_to_channel.delay()
+
+            if post_status == "my_time":
+                days = {
+                    "Monday": 1,
+                    "Tuesday": 2,
+                    "Wednesday": 3,
+                    "Thursday": 4,
+                    "Friday": 5,
+                    "Saturday": 6,
+                    "Sunday": 7,
+                }
+
+                my_times = MyTime.objects.filter(is_active=True, workspace=workspace_id)
+                my_time_list = list(my_times.all())
+
+                available_slot_dates = []
+
+                now = datetime.now(timezone.utc)
+                today = now.isoweekday()
+
+                for time_slot in my_time_list:
+                    slot_day = time_slot.day
+                    slot_time = time_slot.time
+
+                    slot_day_number = days.get(slot_day)
+
+                    day_diff = (
+                        slot_day_number - today
+                        if slot_day_number >= today
+                        else 7 - today - slot_day_number
+                    )
+
+                    slot_date = now + timedelta(days=day_diff)
+                    slot_date_time = datetime.combine(slot_date, slot_time)
+
+                    slot_date_time_utc = convert_to_user_timezone(
+                        user_timezone=user.preference.timezone, date_time=slot_date_time
+                    )
+
+                    post = Post.objects.filter(
+                        schedule_date_time=slot_date_time_utc,
+                        workspace=workspace_id,
+                        status="pending",
+                    ).first()
+                    print(post)
+
+                    if post is None and slot_date_time_utc > now:
+                        available_slot_dates.append(slot_date_time_utc)
+
+                next_slot = min(available_slot_dates)
+
+                print("next_available_slot", next_slot)
+
+                instance.schedule_date_time = next_slot
+            
+            elif post_status == 'schedule':
+                schedule_date_time = instance.schedule_date_time
+                if not schedule_date_time:
+                    raise serializers.ValidationError('Schedule date and time are required')
 
         instance.save()
 

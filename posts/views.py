@@ -217,11 +217,11 @@ class PostPublishView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        serializer = PostPublishSerializer(post, data=request.data, partial=True)
+        serializer = PostPublishSerializer(post, data=request.data, context={'workspace_id': workspace_id, "request": request}, partial=True)
 
         if serializer.is_valid(raise_exception=True):
             serializer.save()
-            post_status = request.data.get("status")
+            post_status = request.data.get("post_status")
             message = ''
             if post_status == 'draft':
                 message = 'Post saved as draft'
