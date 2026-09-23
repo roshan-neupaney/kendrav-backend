@@ -249,9 +249,6 @@ class PostPublishSerializer(serializers.ModelSerializer):
                         available_slot_dates.append(slot_date_time_utc)
 
                 next_slot = min(available_slot_dates)
-
-                print("next_available_slot", next_slot)
-
                 instance.schedule_date_time = next_slot
             
             elif post_status == 'schedule':
