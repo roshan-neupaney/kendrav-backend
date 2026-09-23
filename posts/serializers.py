@@ -150,92 +150,61 @@ class PostPublishSerializer(serializers.ModelSerializer):
         workspace_id = self.context.get("workspace_id")
         user = self.context.get("request").user
 
+        valid_status = ['draft', 'schedule', 'my_time', 'now']
+
+        if post_status not in valid_status:
+            raise serializers.ValidationError(f'{post_status} is not valid status')
+
         if post_status == "draft":
             instance.status = "draft"
             instance.save()
             return instance
-        else:
+
+        workspace_channel_ids = instance.workspace_channel_ids
+
+        if not workspace_channel_ids:
+            raise serializers.ValidationError("At least one channel is required")
+
+        if post_status == "now":
             instance.status = "pending"
-            workspace_channel_ids = instance.workspace_channel_ids
+            instance.save()
+            publish_post_to_channel.delay(post_id=instance.id)
 
-            if not workspace_channel_ids and not len(workspace_channel_ids) > 0:
-                raise serializers.ValidationError("At least one channel is required")
+        if post_status == "my_time":
+            days = {
+                "Monday": 1,
+                "Tuesday": 2,
+                "Wednesday": 3,
+                "Thursday": 4,
+                "Friday": 5,
+                "Saturday": 6,
+                "Sunday": 7,
+            }
+            my_times = MyTime.objects.filter(is_active=True, workspace=workspace_id)
+            my_time_list = list(my_times.all())
 
-            existing_post_channel = ChannelPost.objects.filter(post=instance)
-            channel_post_instances = []
+            available_slot_dates = []
 
-            existing_post_channel_list = list(
-                existing_post_channel.values_list("workspace_channel_id", flat=True)
-            )
+            now = datetime.now(timezone.utc)
+            today = now.isoweekday()
 
-            new_channels = [
-                id
-                for id in workspace_channel_ids
-                if id not in existing_post_channel_list
-            ]
+            week_no = 1
 
-            removed_channels = [
-                id
-                for id in existing_post_channel_list
-                if id not in workspace_channel_ids
-            ]
-
-            for id in new_channels:
-                workspace_channel = WorkspaceChannel.objects.filter(
-                    id=id, is_active=True
-                ).first()
-                if workspace_channel:
-                    channel_post_instance = ChannelPost(
-                        workspace_channel=workspace_channel, post=instance
-                    )
-                    channel_post_instances.append(channel_post_instance)
-            ChannelPost.objects.bulk_create(channel_post_instances)
-
-            for id in removed_channels:
-                removed_channel_post = existing_post_channel.filter(
-                    workspace_channel=id
-                ).first()
-                removed_channel_post.delete()
-
-            if post_status == "now":
-                publish_post_to_channel.delay()
-
-            if post_status == "my_time":
-                days = {
-                    "Monday": 1,
-                    "Tuesday": 2,
-                    "Wednesday": 3,
-                    "Thursday": 4,
-                    "Friday": 5,
-                    "Saturday": 6,
-                    "Sunday": 7,
-                }
-
-                my_times = MyTime.objects.filter(is_active=True, workspace=workspace_id)
-                my_time_list = list(my_times.all())
-
-                available_slot_dates = []
-
-                now = datetime.now(timezone.utc)
-                today = now.isoweekday()
-
+            while not len(available_slot_dates) > 0:
                 for time_slot in my_time_list:
                     slot_day = time_slot.day
                     slot_time = time_slot.time
-
                     slot_day_number = days.get(slot_day)
-
                     day_diff = (
-                        slot_day_number - today
+                        7 * (week_no - 1) + slot_day_number - today
                         if slot_day_number >= today
-                        else 7 - today - slot_day_number
+                        else (7 * week_no - today) + slot_day_number
                     )
-
                     slot_date = now + timedelta(days=day_diff)
-                    slot_date_time = datetime.combine(slot_date, slot_time)
-
+                    slot_date_time = datetime.combine(slot_date.date(), slot_time)
                     slot_date_time_utc = convert_to_user_timezone(
-                        user_timezone=user.preference.timezone, date_time=slot_date_time
+                        user_timezone=user.preference.timezone,
+                        date_time=slot_date_time,
                     )
 
                     post = Post.objects.filter(
@@ -243,18 +212,63 @@ class PostPublishSerializer(serializers.ModelSerializer):
                         workspace=workspace_id,
                         status="pending",
                     ).first()
-                    print(post)
 
                     if post is None and slot_date_time_utc > now:
                         available_slot_dates.append(slot_date_time_utc)
 
-                next_slot = min(available_slot_dates)
-                instance.schedule_date_time = next_slot
-            
-            elif post_status == 'schedule':
-                schedule_date_time = instance.schedule_date_time
-                if not schedule_date_time:
-                    raise serializers.ValidationError('Schedule date and time are required')
+                week_no += 1
+
+            next_slot = min(available_slot_dates)
+            instance.status = "pending"
+            instance.schedule_date_time = next_slot
+
+        elif post_status == "schedule":
+            schedule_date_time = instance.schedule_date_time
+            if not schedule_date_time:
+                raise serializers.ValidationError(
+                    "Schedule date and time are required"
+                )
+            instance.status = "pending"
+
+        existing_post_channel = ChannelPost.objects.filter(post=instance)
+        
+        channel_post_instances = []
+
+        existing_post_channel_list = list(
+            existing_post_channel.values_list("workspace_channel_id", flat=True)
+        )
+
+        new_channels = [
+            id
+            for id in workspace_channel_ids
+            if id not in existing_post_channel_list
+        ]
+
+        removed_channels = [
+            id
+            for id in existing_post_channel_list
+            if id not in workspace_channel_ids
+        ]
+
+        for id in new_channels:
+            workspace_channel = WorkspaceChannel.objects.filter(
+                id=id, is_active=True
+            ).first()
+
+            if workspace_channel:
+                channel_post_instance = ChannelPost(
+                    workspace_channel=workspace_channel, post=instance
+                )
+                channel_post_instances.append(channel_post_instance)
+
+        ChannelPost.objects.bulk_create(channel_post_instances)
+
+        for id in removed_channels:
+            removed_channel_post = existing_post_channel.filter(
+                workspace_channel=id
+            ).first()
+
+            removed_channel_post.delete()
 
         instance.save()
 

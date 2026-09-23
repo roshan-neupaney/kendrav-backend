@@ -197,7 +197,7 @@ class PostWithIdView(APIView):
 class PostPublishView(APIView):
     def get_permissions(self):
         permissions = {
-            "PATCH  ": [
+            "PATCH": [
                 IsAuthenticated(),
                 HasWorkspacePermission("post:can_publish")(),
             ],
