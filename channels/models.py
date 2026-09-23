@@ -2,11 +2,12 @@ from django.db import models
 from django.utils.text import slugify
 
 StatusChoices = [
-    ('pending', 'Pending'),
-    ('failed', 'Failed'),
-    ('published', 'Published'),
-    ('process_failed', 'Process Failed'),
+    ("pending", "Pending"),
+    ("failed", "Failed"),
+    ("published", "Published"),
+    ("process_failed", "Process Failed"),
 ]
+
 
 class Channel(models.Model):
     title = models.CharField(max_length=100)
@@ -18,32 +19,49 @@ class Channel(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     def save(self, *args, **kwargs):
-    # Automatically generate the slug from the title if it doesn't exist
+        # Automatically generate the slug from the title if it doesn't exist
         if not self.slug_url:
-          self.slug_url = slugify(self.title)
+            self.slug_url = slugify(self.title)
         super().save(*args, **kwargs)
 
+
 class WorkspaceChannel(models.Model):
-    workspace = models.ForeignKey('workspaces.Workspace', on_delete=models.CASCADE, related_name='workspace_channels')
-    channel = models.ForeignKey(Channel, on_delete=models.CASCADE, related_name='channel_workspaces')
+    workspace = models.ForeignKey(
+        "workspaces.Workspace",
+        on_delete=models.CASCADE,
+        related_name="workspace_channels",
+    )
+    channel = models.ForeignKey(
+        Channel, on_delete=models.CASCADE, related_name="channel_workspaces"
+    )
     full_name = models.CharField(max_length=100, blank=True, null=True)
     username = models.CharField(max_length=100, blank=True, null=True)
     account_id = models.CharField(max_length=100, blank=True, null=True)
+    page_id = models.CharField(max_length=100, blank=True, null=True)
+    page_name = models.CharField(max_length=100, blank=True, null=True)
     profile_picture = models.CharField(blank=True, null=True)
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+
 class ChannelConfig(models.Model):
-    workspace_channel = models.OneToOneField(WorkspaceChannel, on_delete=models.CASCADE, related_name='channel_config')
+    workspace_channel = models.OneToOneField(
+        WorkspaceChannel, on_delete=models.CASCADE, related_name="channel_config"
+    )
     config = models.JSONField(default=dict, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+
 class ChannelPost(models.Model):
-    workspace_channel = models.ForeignKey(WorkspaceChannel, on_delete=models.CASCADE, related_name='channel_posts')
-    post = models.ForeignKey('posts.Post', on_delete=models.CASCADE, related_name='post_channels')
-    status = models.CharField(max_length=50, default='pending', choices=StatusChoices)
+    workspace_channel = models.ForeignKey(
+        WorkspaceChannel, on_delete=models.CASCADE, related_name="channel_posts"
+    )
+    post = models.ForeignKey(
+        "posts.Post", on_delete=models.CASCADE, related_name="post_channels"
+    )
+    status = models.CharField(max_length=50, default="pending", choices=StatusChoices)
     published_at = models.DateTimeField(blank=True, null=True)
     platform_post_id = models.CharField(max_length=100, blank=True, null=True)
     error_message = models.TextField(blank=True, null=True)

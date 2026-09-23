@@ -6,7 +6,8 @@ from rest_framework.permissions import IsAuthenticated
 from .models import Post
 from .serializers import PostSerializer, PostPublishSerializer
 from .pagination import StandardCursorPagination
-from datetime import datetime, timezone
+from datetime import datetime
+from django.db import transaction
 
 
 class PostView(APIView):
@@ -217,27 +218,33 @@ class PostPublishView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        serializer = PostPublishSerializer(post, data=request.data, context={'workspace_id': workspace_id, "request": request}, partial=True)
+        serializer = PostPublishSerializer(
+            post,
+            data=request.data,
+            context={"workspace_id": workspace_id, "request": request},
+            partial=True,
+        )
 
         if serializer.is_valid(raise_exception=True):
-            serializer.save()
-            post_status = request.data.get("post_status")
-            message = ''
-            if post_status == 'draft':
-                message = 'Post saved as draft'
-            elif post_status == 'schedule' or post_status == 'my_time':
-                message = "Post scheduled successfully"
-            elif post_status == 'now':
-                message = "Publishing..."
+            with transaction.atomic():
+                serializer.save()
+                post_status = request.data.get("post_status")
+                message = ""
+                if post_status == "draft":
+                    message = "Post saved as draft"
+                elif post_status == "schedule" or post_status == "my_time":
+                    message = "Post scheduled successfully"
+                elif post_status == "now":
+                    message = "Publishing..."
 
-            return Response(
-                {
-                    "message": message,
-                    "status": status.HTTP_200_OK,
-                    "data": serializer.data,
-                },
-                status=status.HTTP_200_OK,
-            )
+                return Response(
+                    {
+                        "message": message,
+                        "status": status.HTTP_200_OK,
+                        "data": serializer.data,
+                    },
+                    status=status.HTTP_200_OK,
+                )
 
         return Response(
             {

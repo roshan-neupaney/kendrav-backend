@@ -150,10 +150,10 @@ class PostPublishSerializer(serializers.ModelSerializer):
         workspace_id = self.context.get("workspace_id")
         user = self.context.get("request").user
 
-        valid_status = ['draft', 'schedule', 'my_time', 'now']
+        valid_status = ["draft", "schedule", "my_time", "now"]
 
         if post_status not in valid_status:
-            raise serializers.ValidationError(f'{post_status} is not valid status')
+            raise serializers.ValidationError(f"{post_status} is not valid status")
 
         if post_status == "draft":
             instance.status = "draft"
@@ -164,6 +164,42 @@ class PostPublishSerializer(serializers.ModelSerializer):
 
         if not workspace_channel_ids:
             raise serializers.ValidationError("At least one channel is required")
+
+        existing_post_channel = ChannelPost.objects.filter(post=instance)
+
+        channel_post_instances = []
+
+        existing_post_channel_list = list(
+            existing_post_channel.values_list("workspace_channel_id", flat=True)
+        )
+
+        new_channels = [
+            id for id in workspace_channel_ids if id not in existing_post_channel_list
+        ]
+
+        removed_channels = [
+            id for id in existing_post_channel_list if id not in workspace_channel_ids
+        ]
+
+        for id in new_channels:
+            workspace_channel = WorkspaceChannel.objects.filter(
+                id=id, is_active=True
+            ).first()
+
+            if workspace_channel:
+                channel_post_instance = ChannelPost(
+                    workspace_channel=workspace_channel, post=instance
+                )
+                channel_post_instances.append(channel_post_instance)
+
+        ChannelPost.objects.bulk_create(channel_post_instances)
+
+        for id in removed_channels:
+            removed_channel_post = existing_post_channel.filter(
+                workspace_channel=id
+            ).first()
+
+            removed_channel_post.delete()
 
         if post_status == "now":
             instance.status = "pending"
@@ -224,51 +260,17 @@ class PostPublishSerializer(serializers.ModelSerializer):
 
         elif post_status == "schedule":
             schedule_date_time = instance.schedule_date_time
+
+            current_date = datetime.now(timezone.utc)
+
             if not schedule_date_time:
+                raise serializers.ValidationError("Schedule date and time are required")
+
+            if current_date > schedule_date_time:
                 raise serializers.ValidationError(
-                    "Schedule date and time are required"
+                    "Schedule date time cannot be in past"
                 )
             instance.status = "pending"
-
-        existing_post_channel = ChannelPost.objects.filter(post=instance)
-        
-        channel_post_instances = []
-
-        existing_post_channel_list = list(
-            existing_post_channel.values_list("workspace_channel_id", flat=True)
-        )
-
-        new_channels = [
-            id
-            for id in workspace_channel_ids
-            if id not in existing_post_channel_list
-        ]
-
-        removed_channels = [
-            id
-            for id in existing_post_channel_list
-            if id not in workspace_channel_ids
-        ]
-
-        for id in new_channels:
-            workspace_channel = WorkspaceChannel.objects.filter(
-                id=id, is_active=True
-            ).first()
-
-            if workspace_channel:
-                channel_post_instance = ChannelPost(
-                    workspace_channel=workspace_channel, post=instance
-                )
-                channel_post_instances.append(channel_post_instance)
-
-        ChannelPost.objects.bulk_create(channel_post_instances)
-
-        for id in removed_channels:
-            removed_channel_post = existing_post_channel.filter(
-                workspace_channel=id
-            ).first()
-
-            removed_channel_post.delete()
 
         instance.save()
 
