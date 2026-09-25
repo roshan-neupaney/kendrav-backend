@@ -1,6 +1,8 @@
 import requests
 from django.conf import settings
 from datetime import datetime, timedelta, timezone
+from django.core.cache import cache
+import random
 
 
 def oauth_handler(slug_url):
@@ -50,34 +52,86 @@ class FacebookHandler:
         if error:
             return {"message": error["message"], "status": False}
 
-        user_data = requests.get(
-            "https://graph.facebook.com/v26.0/me",
+        user_access_token = res.get("access_token")
+        user_page_data = requests.get(
+            "https://graph.facebook.com/v26.0/me/accounts",
             params={
-                "fields": "id,name,picture",
-                "access_token": res.get("access_token"),
+                "fields": "id,name,page_token,picture,access_token",
+                "access_token": user_access_token,
             },
         ).json()
 
-        error = user_data.get("error", "")
+        error = user_page_data.get("error", "")
         if error:
             return {"message": error["message"], "status": False}
 
-        profile_picture = user_data.get("picture")["data"]["url"]
+        page_list = user_page_data.get("data")
 
-        expires_in = res.get("expires_in")
-        if expires_in:
-            expires_at = datetime.now(timezone.utc) + timedelta(seconds=expires_in)
-        else:
-            expires_at = None
+        updated_page_list = []
+
+        for page in page_list:
+            temp_page = page
+            temp_page["user_access_token"] = user_access_token
+            updated_page_list.append(page)
+
+        uuid = str(random.randint(100000, 999999))
+        cache.set(
+            f"user_page_list:{uuid}",
+            {
+                "pages": updated_page_list,
+                "channel": "facebook"
+            },
+            timeout=300,
+        )
+
+        list_to_return = []
+
+        for page in page_list:
+            page.pop("access_token")
+            list_to_return.append(page)
+
+        has_pages = len(list_to_return) > 0
 
         return {
-            "access_token": res.get("access_token"),
-            "expires_at": expires_at,
-            "full_name": user_data.get("name", ""),
-            "account_id": user_data.get("id", ""),
-            "profile_picture": profile_picture,
+            "data": list_to_return if has_pages else None,
+            "required_page_selection": has_pages,
+            "uuid": uuid,
             "status": True,
         }
+
+    def get_page_data(self, pages):
+
+        result = []
+
+        for page in pages:
+            data = {
+                "channel_config": {},
+                "channel_data": {
+                    "name": page.get("name"),
+                    "accound_id": page.get("id"),
+                    "profile_picture": page.get("picture")["data"]["url"],
+                    "access_token": page.get("access_token"),
+                },
+            }
+            result.append(data)
+
+        return result
+        # profile_picture = user_data.get("picture")["data"]["url"]
+
+        # expires_in = res.get("expires_in")
+        # if expires_in:
+        #     expires_at = datetime.now(timezone.utc) + timedelta(seconds=expires_in)
+        # else:
+        #     expires_at = None
+
+        # return {
+        #     "access_token": res.get("access_token"),
+        #     "expires_at": expires_at,
+        #     "full_name": user_data.get("name", ""),
+        #     "account_id": user_data.get("id", ""),
+        #     "profile_picture": profile_picture,
+        #     "status": True,
+        # }
 
     def invalidate_token(self, account_id, access_token):
         requests.delete(
@@ -93,5 +147,5 @@ class FacebookHandler:
                 "access_token": access_token,
             },
         ).json()
-        
-        return bool(not user_data.get('error') and user_data.get('id'))
+
+        return bool(not user_data.get("error") and user_data.get("id"))

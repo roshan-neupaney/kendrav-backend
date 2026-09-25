@@ -34,11 +34,9 @@ class WorkspaceChannel(models.Model):
     channel = models.ForeignKey(
         Channel, on_delete=models.CASCADE, related_name="channel_workspaces"
     )
-    full_name = models.CharField(max_length=100, blank=True, null=True)
     username = models.CharField(max_length=100, blank=True, null=True)
     account_id = models.CharField(max_length=100, blank=True, null=True)
-    page_id = models.CharField(max_length=100, blank=True, null=True)
-    page_name = models.CharField(max_length=100, blank=True, null=True)
+    name = models.CharField(max_length=100, blank=True, null=True)
     profile_picture = models.CharField(blank=True, null=True)
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)

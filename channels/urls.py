@@ -5,6 +5,7 @@ from .views import (
     WorkspaceChannelView,
     WorkspaceChannelWithIdView,
     WorkspaceChannelHealthView,
+    ExchangeCodeView
 )
 
 urlpatterns = [
@@ -14,6 +15,11 @@ urlpatterns = [
         "<int:workspace_id>/channel/",
         WorkspaceChannelView.as_view(),
         name="workspace-channel",
+    ),
+    path(
+        "exchange-code/",
+        ExchangeCodeView.as_view(),
+        name="exchange-code",
     ),
     path(
         "<int:workspace_id>/channel/<int:workspace_channel_id>/",

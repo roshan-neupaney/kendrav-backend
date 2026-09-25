@@ -4,6 +4,7 @@ from channels.oauth_handlers import oauth_handler
 from django.conf import settings
 import requests
 from workspaces.models import Workspace
+from django.core.cache import cache
 
 
 class ChannelSerializer(serializers.ModelSerializer):
@@ -36,6 +37,13 @@ class ChannelConfigSerializer(serializers.ModelSerializer):
         return data
 
 
+class ExchangeCodeSerializer(serializers.Serializer):
+    code = serializers.CharField(write_only=True)
+    channel_id = serializers.PrimaryKeyRelatedField(
+        queryset=Channel.objects.all(), write_only=True
+    )
+
+
 class WorkspaceChannelSerializer(serializers.ModelSerializer):
     channel = ChannelSerializer(read_only=True)
     channel_config = ChannelConfigSerializer(read_only=True)
@@ -43,7 +51,10 @@ class WorkspaceChannelSerializer(serializers.ModelSerializer):
     channel_id = serializers.PrimaryKeyRelatedField(
         queryset=Channel.objects.all(), write_only=True
     )
-    code = serializers.CharField(write_only=True)
+    uuid = serializers.CharField(write_only=True)
+    page_ids = serializers.ListField(
+        child=serializers.IntegerField(), required=True, write_only=True
+    )
 
     class Meta:
         model = WorkspaceChannel
@@ -63,20 +74,29 @@ class WorkspaceChannelSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         channel = validated_data.get("channel_id")
-        code = validated_data.get("code", "")
+
         workspace_id = self.context.get("workspace_id", "")
+        page_ids = validated_data.pop("page_ids")
+        uuid = validated_data.pop("uuid")
 
         workspace = Workspace.objects.filter(id=workspace_id, is_active=True).first()
 
         if workspace is None:
             raise serializers.ValidationError("Workspace not found")
 
-        handler = oauth_handler(slug_url=channel.slug_url)
+        cache_data = cache.get(f"user_page_list:{uuid}")
 
-        result = handler.exchange_token(code=code)
+        if not cache_data:
+            serializers.ValidationError("Session Expired")
 
-        if not result.get("status"):
-            raise serializers.ValidationError(result.get("message"))
+        cache_pages = cache_data.get("pages", None)
+        cache_channel = cache_data.get("channel")
+
+        handler = oauth_handler(cache_channel)
+
+        pages = [page for page in cache_pages if page.id in page_ids]
+
+        result = handler.get_page_data(pages)
 
         full_name = result.get("full_name", "")
         access_token = result.get("access_token", "")

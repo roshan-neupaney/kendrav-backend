@@ -3,7 +3,11 @@ from rest_framework.response import Response
 from rest_framework import status
 from users.permission import IsSuperAdmin
 from .models import Channel, WorkspaceChannel
-from .serializers import ChannelSerializer, WorkspaceChannelSerializer
+from .serializers import (
+    ChannelSerializer,
+    WorkspaceChannelSerializer,
+    ExchangeCodeSerializer,
+)
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from workspaces.permission import IsWorkspaceMember, HasWorkspacePermission
 from .oauth_handlers import oauth_handler
@@ -99,6 +103,34 @@ class ChannelWithIdView(APIView):
         )
 
 
+class ExchangeCodeView(APIView):
+    def post(self, request):
+        serializer = ExchangeCodeSerializer(data=request.data)
+
+        if serializer.is_valid(raise_exception=True):
+            code = serializer.validated_data.get("code")
+            channel = serializer.validated_data.get("channel_id")
+
+            handler = oauth_handler(slug_url=channel.slug_url)
+            result = handler.exchange_token(code=code)
+
+            return Response(
+                {
+                    "message": "Page list retrived successfully",
+                    "status": status.HTTP_200_OK,
+                    "data": result,
+                },
+                status=status.HTTP_200_OK,
+            )
+        return Response(
+            {
+                "message": serializer.error_messages,
+                "status": status.HTTP_400_BAD_REQUEST,
+            },
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+
 class WorkspaceChannelView(APIView):
     def get_permissions(self):
         method_permissions = {
@@ -134,7 +166,7 @@ class WorkspaceChannelView(APIView):
             serailzer.save()
             return Response(
                 {
-                    "message": "Workspace channel created successfully",
+                    "message": "Workspace channel connected successfully",
                     "status": status.HTTP_200_OK,
                     "data": serailzer.data,
                 },
