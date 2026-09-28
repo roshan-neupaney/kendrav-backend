@@ -17,7 +17,7 @@ urlpatterns = [
         name="workspace-channel",
     ),
     path(
-        "exchange-code/",
+        "<int:workspace_id>/exchange-code/",
         ExchangeCodeView.as_view(),
         name="exchange-code",
     ),

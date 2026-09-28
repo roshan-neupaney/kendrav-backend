@@ -53,7 +53,7 @@ class WorkspaceChannelSerializer(serializers.ModelSerializer):
     )
     uuid = serializers.CharField(write_only=True)
     page_ids = serializers.ListField(
-        child=serializers.IntegerField(), required=True, write_only=True
+        child=serializers.CharField(), required=True, write_only=True
     )
 
     class Meta:
@@ -62,12 +62,13 @@ class WorkspaceChannelSerializer(serializers.ModelSerializer):
             "id",
             "workspace_id",
             "channel",
-            "code",
             "channel_id",
             "username",
             "account_id",
             "channel_config",
             "is_active",
+            "page_ids",
+            "uuid",
             "created_at",
             "updated_at",
         ]
@@ -87,61 +88,49 @@ class WorkspaceChannelSerializer(serializers.ModelSerializer):
         cache_data = cache.get(f"user_page_list:{uuid}")
 
         if not cache_data:
-            serializers.ValidationError("Session Expired")
+            raise serializers.ValidationError("Session Expired")
 
-        cache_pages = cache_data.get("pages", None)
+        cache_pages = cache_data.get("pages")
         cache_channel = cache_data.get("channel")
 
         handler = oauth_handler(cache_channel)
 
-        pages = [page for page in cache_pages if page.id in page_ids]
-
+        pages = [page for page in cache_pages if page.get('id') in page_ids]
         result = handler.get_page_data(pages)
 
-        full_name = result.get("full_name", "")
-        access_token = result.get("access_token", "")
-        expires_at = result.get("expires_at", "")
-        account_id = result.get("account_id", "")
-        profile_picture = result.get("profile_picture", "")
+        final_data = []
 
-        config = {
-            "access_token": access_token,
-            "expires_at": expires_at.isoformat() if expires_at else None,
-        }
+        for page in result:
+            config = page.get("channel_config")
+            channel_data = page.get("channel_data")
 
-        workspace_channel = (
-            WorkspaceChannel.objects.prefetch_related("channel_config")
-            .filter(channel=channel, workspace=workspace, account_id=account_id)
-            .first()
-        )
+            account_id = channel_data.get("account_id")
 
-        if workspace_channel is None:
-            workspace_channel = WorkspaceChannel.objects.create(
-                channel=channel,
-                workspace=workspace,
-                account_id=account_id,
-                full_name=full_name,
-                profile_picture=profile_picture,
+            workspace_channel = (
+                WorkspaceChannel.objects.prefetch_related("channel_config")
+                .filter(workspace_id=workspace_id, account_id=account_id)
+                .first()
             )
-            ChannelConfig.objects.create(
-                workspace_channel=workspace_channel, config=config
-            )
-        elif workspace_channel.is_active:
-            if not hasattr(workspace_channel, "channel_config"):
+
+            if workspace_channel is None:
+                workspace_channel = WorkspaceChannel.objects.create(
+                    workspace=workspace, channel=channel, **channel_data
+                )
                 ChannelConfig.objects.create(
                     workspace_channel=workspace_channel, config=config
                 )
-            raise serializers.ValidationError("Workspace channel already exists")
-        else:
-            workspace_channel.is_active = True
-            if hasattr(workspace_channel, "channel_config"):
-                workspace_channel.channel_config.config = config
-                workspace_channel.channel_config.save()
+
             else:
-                ChannelConfig.objects.create(
-                    workspace_channel=workspace_channel, config=config
-                )
+                workspace_channel.is_active = True
+                if hasattr(workspace_channel, "channel_config"):
+                    workspace_channel.channel_config.config = config
+                else:
+                    ChannelConfig.objects.create(
+                        workspace_channel=workspace_channel, config=config
+                    )
 
-            workspace_channel.save()
+                workspace_channel.save()
+            
+            final_data.append(workspace_channel)
 
-        return workspace_channel
+        return final_data

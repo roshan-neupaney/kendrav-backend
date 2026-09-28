@@ -70,18 +70,15 @@ class FacebookHandler:
         updated_page_list = []
 
         for page in page_list:
-            temp_page = page
+            temp_page = page.copy()
             temp_page["user_access_token"] = user_access_token
-            updated_page_list.append(page)
+            updated_page_list.append(temp_page)
 
         uuid = str(random.randint(100000, 999999))
         cache.set(
             f"user_page_list:{uuid}",
-            {
-                "pages": updated_page_list,
-                "channel": "facebook"
-            },
-            timeout=300,
+            {"pages": updated_page_list, "channel": "facebook"},
+            timeout=3000,
         )
 
         list_to_return = []
@@ -100,17 +97,18 @@ class FacebookHandler:
         }
 
     def get_page_data(self, pages):
-
         result = []
 
         for page in pages:
             data = {
-                "channel_config": {},
+                "channel_config": {
+                    "user_access_token": page.get("user_access_token"),
+                    "page_access_token": page.get("access_token"),
+                },
                 "channel_data": {
                     "name": page.get("name"),
-                    "accound_id": page.get("id"),
-                    "profile_picture": page.get("picture")["data"]["url"],
-                    "access_token": page.get("access_token"),
+                    "account_id": page.get("id"),
+                    "profile_picture": page.get("picture")["data"]["url"]
                 },
             }
             result.append(data)

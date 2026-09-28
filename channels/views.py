@@ -12,6 +12,7 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from workspaces.permission import IsWorkspaceMember, HasWorkspacePermission
 from .oauth_handlers import oauth_handler
 from datetime import datetime, timezone
+from django.db import transaction
 
 
 class ChannelView(APIView):
@@ -104,7 +105,7 @@ class ChannelWithIdView(APIView):
 
 
 class ExchangeCodeView(APIView):
-    def post(self, request):
+    def post(self, request, workspace_id):
         serializer = ExchangeCodeSerializer(data=request.data)
 
         if serializer.is_valid(raise_exception=True):
@@ -113,6 +114,16 @@ class ExchangeCodeView(APIView):
 
             handler = oauth_handler(slug_url=channel.slug_url)
             result = handler.exchange_token(code=code)
+
+            data = result.get("data")
+            if data:
+                for page in data:
+                    workspace_channel = WorkspaceChannel.objects.filter(
+                        workspace_id=workspace_id,
+                        account_id=page.get("id"),
+                        is_active=True,
+                    ).first()
+                    page["is_connnected"] = bool(workspace_channel)
 
             return Response(
                 {
@@ -158,24 +169,25 @@ class WorkspaceChannelView(APIView):
         )
 
     def post(self, request, workspace_id):
-        serailzer = WorkspaceChannelSerializer(
-            data=request.data, context={"workspace_id": workspace_id}
+        serializer = WorkspaceChannelSerializer(
+            data=request.data, context={"workspace_id": workspace_id}, many=True
         )
 
-        if serailzer.is_valid(raise_exception=True):
-            serailzer.save()
-            return Response(
-                {
-                    "message": "Workspace channel connected successfully",
-                    "status": status.HTTP_200_OK,
-                    "data": serailzer.data,
-                },
-                status=status.HTTP_200_OK,
-            )
+        if serializer.is_valid(raise_exception=True):
+            with transaction.atomic():
+                serializer.save()
+                return Response(
+                    {
+                        "message": "Workspace channel connected successfully",
+                        "status": status.HTTP_200_OK,
+                        "data": serializer.data,
+                    },
+                    status=status.HTTP_200_OK,
+                )
 
         return Response(
             {
-                "message": serailzer.error_messages,
+                "message": serializer.error_messages,
                 "status": status.HTTP_400_BAD_REQUEST,
             },
             status=status.HTTP_400_BAD_REQUEST,
