@@ -122,6 +122,7 @@ class WorkspaceChannelSerializer(serializers.ModelSerializer):
                 workspace_channel.is_active = True
                 if hasattr(workspace_channel, "channel_config"):
                     workspace_channel.channel_config.config = config
+                    workspace_channel.channel_config.config.save()
                 else:
                     ChannelConfig.objects.create(
                         workspace_channel=workspace_channel, config=config
@@ -129,8 +130,7 @@ class WorkspaceChannelSerializer(serializers.ModelSerializer):
 
                 workspace_channel.save()
             
-            cache.delete(f"user_page_list:{uuid}")
-            
             final_data.append(workspace_channel)
+        cache.delete(f"user_page_list:{uuid}")
 
         return WorkspaceChannelSerializer(final_data, many=True).data

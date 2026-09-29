@@ -1,8 +1,9 @@
 import requests
 from django.conf import settings
-from datetime import datetime, timedelta, timezone
 from django.core.cache import cache
-import random
+import uuid
+
+uuid_key = str(uuid.uuid4())
 
 
 def oauth_handler(slug_url):
@@ -74,9 +75,8 @@ class FacebookHandler:
             temp_page["user_access_token"] = user_access_token
             updated_page_list.append(temp_page)
 
-        uuid = str(random.randint(100000, 999999))
         cache.set(
-            f"user_page_list:{uuid}",
+            f"user_page_list:{uuid_key}",
             {"pages": updated_page_list, "channel": "facebook"},
             timeout=3000,
         )
@@ -92,7 +92,7 @@ class FacebookHandler:
         return {
             "data": list_to_return if has_pages else None,
             "required_page_selection": has_pages,
-            "uuid": uuid,
+            "uuid": uuid_key,
             "status": True,
         }
 
@@ -114,28 +114,9 @@ class FacebookHandler:
             result.append(data)
 
         return result
-        # profile_picture = user_data.get("picture")["data"]["url"]
 
-        # expires_in = res.get("expires_in")
-        # if expires_in:
-        #     expires_at = datetime.now(timezone.utc) + timedelta(seconds=expires_in)
-        # else:
-        #     expires_at = None
-
-        # return {
-        #     "access_token": res.get("access_token"),
-        #     "expires_at": expires_at,
-        #     "full_name": user_data.get("name", ""),
-        #     "account_id": user_data.get("id", ""),
-        #     "profile_picture": profile_picture,
-        #     "status": True,
-        # }
-
-    def invalidate_token(self, account_id, access_token):
-        requests.delete(
-            f"https://graph.facebook.com/v26.0/{account_id}/permissions",
-            params={"access_token": access_token},
-        )
+    def invalidate_token(self, account_id, config):
+        return {}
 
     def test_user_data(self, access_token):
         user_data = requests.get(

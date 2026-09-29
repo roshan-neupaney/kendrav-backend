@@ -16,9 +16,9 @@ from django.db import transaction
 
 
 class ChannelView(APIView):
-    # def get_permissions(self):
-    #     method_permissions = {"GET": [AllowAny()], "POST": [IsSuperAdmin()]}
-    #     return method_permissions.get(self.request.method, [IsAuthenticated()])
+    def get_permissions(self):
+        method_permissions = {"GET": [AllowAny()], "POST": [IsSuperAdmin()]}
+        return method_permissions.get(self.request.method, [IsAuthenticated()])
 
     def get(self, request):
         channel = Channel.objects.filter(is_active=True)
@@ -136,8 +136,8 @@ class ExchangeCodeView(APIView):
                     "data": result,
                 },
                 status=status.HTTP_200_OK
-                    if result_status
-                    else status.HTTP_400_BAD_REQUEST,
+                if result_status
+                else status.HTTP_400_BAD_REQUEST,
             )
         return Response(
             {
@@ -185,7 +185,7 @@ class WorkspaceChannelView(APIView):
 
                 return Response(
                     {
-                        "message": "Workspace channel connected successfully",
+                        "message": "User channel connected successfully",
                         "status": status.HTTP_200_OK,
                         "data": result,
                     },
@@ -222,18 +222,17 @@ class WorkspaceChannelWithIdView(APIView):
         if workspace_channel is None:
             return Response(
                 {
-                    "message": "Workspace Channel not found",
+                    "message": "User Channel not found",
                     "status": status.HTTP_400_BAD_REQUEST,
                 },
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
         config = workspace_channel.channel_config.config
-        access_token = config.get("access_token", "")
 
-        if access_token:
+        if config:
             handler = oauth_handler(workspace_channel.channel.slug_url)
-            handler.invalidate_token(workspace_channel.account_id, access_token)
+            handler.invalidate_token(workspace_channel.account_id, config)
 
         workspace_channel.is_active = False
         workspace_channel.channel_config.config = {}
@@ -241,7 +240,7 @@ class WorkspaceChannelWithIdView(APIView):
         workspace_channel.save()
         return Response(
             {
-                "message": "Workspace Channel Disconnected Successfully",
+                "message": "Channel disconnected successfully",
                 "status": status.HTTP_200_OK,
             },
             status=status.HTTP_200_OK,
