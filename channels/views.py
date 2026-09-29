@@ -115,6 +115,8 @@ class ExchangeCodeView(APIView):
             handler = oauth_handler(slug_url=channel.slug_url)
             result = handler.exchange_token(code=code)
 
+            result_status = result.get("status", False)
+
             data = result.get("data")
             if data:
                 for page in data:
@@ -128,10 +130,14 @@ class ExchangeCodeView(APIView):
             return Response(
                 {
                     "message": "Page list retrived successfully",
-                    "status": status.HTTP_200_OK,
+                    "status": status.HTTP_200_OK
+                    if result_status
+                    else status.HTTP_400_BAD_REQUEST,
                     "data": result,
                 },
-                status=status.HTTP_200_OK,
+                status=status.HTTP_200_OK
+                    if result_status
+                    else status.HTTP_400_BAD_REQUEST,
             )
         return Response(
             {
@@ -170,17 +176,18 @@ class WorkspaceChannelView(APIView):
 
     def post(self, request, workspace_id):
         serializer = WorkspaceChannelSerializer(
-            data=request.data, context={"workspace_id": workspace_id}, many=True
+            data=request.data, context={"workspace_id": workspace_id}
         )
 
         if serializer.is_valid(raise_exception=True):
             with transaction.atomic():
-                serializer.save()
+                result = serializer.save()
+
                 return Response(
                     {
                         "message": "Workspace channel connected successfully",
                         "status": status.HTTP_200_OK,
-                        "data": serializer.data,
+                        "data": result,
                     },
                     status=status.HTTP_200_OK,
                 )

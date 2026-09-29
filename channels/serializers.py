@@ -31,9 +31,7 @@ class ChannelConfigSerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
-        config = data.pop("config")
-        config.pop("access_token")
-        data["config"] = config
+        data.pop("config")
         return data
 
 
@@ -131,6 +129,8 @@ class WorkspaceChannelSerializer(serializers.ModelSerializer):
 
                 workspace_channel.save()
             
+            cache.delete(f"user_page_list:{uuid}")
+            
             final_data.append(workspace_channel)
 
-        return final_data
+        return WorkspaceChannelSerializer(final_data, many=True).data
