@@ -122,7 +122,7 @@ class WorkspaceChannelSerializer(serializers.ModelSerializer):
                 workspace_channel.is_active = True
                 if hasattr(workspace_channel, "channel_config"):
                     workspace_channel.channel_config.config = config
-                    workspace_channel.channel_config.config.save()
+                    workspace_channel.channel_config.save()
                 else:
                     ChannelConfig.objects.create(
                         workspace_channel=workspace_channel, config=config
