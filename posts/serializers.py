@@ -4,7 +4,7 @@ from channels.models import ChannelPost, WorkspaceChannel
 from channels.serializers import WorkspaceChannelSerializer
 from workspaces.models import Workspace, MyTime
 from datetime import datetime, timezone, timedelta
-from .tasks import publish_post_to_channel
+from .tasks import publish_post_instantly
 from zoneinfo import ZoneInfo
 from .utils import convert_to_user_timezone
 
@@ -203,8 +203,9 @@ class PostPublishSerializer(serializers.ModelSerializer):
 
         if post_status == "now":
             instance.status = "pending"
+            instance.schedule_date_time = None
             instance.save()
-            publish_post_to_channel.delay(post_id=instance.id)
+            publish_post_instantly.delay(post_id=instance.id)
 
         if post_status == "my_time":
             days = {

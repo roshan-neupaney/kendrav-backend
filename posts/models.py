@@ -21,6 +21,7 @@ MediaTypeChoices = [
 
 class Post(models.Model):
     caption = models.TextField(blank=True, null=True)
+    link = models.URLField(blank=True, null=True)
     workspace = models.ForeignKey('workspaces.Workspace', on_delete=models.CASCADE, related_name='posts')
     created_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='posts')
     location = models.CharField(max_length=255, blank=True, null=True)

@@ -4,7 +4,9 @@ from workspaces.models import WorkspaceMember, RolePermission
 
 class IsWorkspaceMember(BasePermission):
     def has_permission(self, request, view):
-        workspace_id = request.headers.get('workspaceId')
+        workspace_id = view.kwargs.get("workspace_id") or request.headers.get(
+            "workspaceId"
+        )
         user = request.user
         if not workspace_id:
             return False
@@ -17,7 +19,9 @@ class IsWorkspaceMember(BasePermission):
 def HasWorkspacePermission(required_permission):
     class _HasWorkspacePermission(BasePermission):
         def has_permission(self, request, view):
-            workspace_id = request.headers.get('workspaceId')
+            workspace_id = view.kwargs.get("workspace_id") or request.headers.get(
+                "workspaceId"
+            )
             user = request.user
             member_role_permissions = []
             workspace_member = (
@@ -43,7 +47,7 @@ def HasWorkspacePermission(required_permission):
 
             for item in role_permissions:
                 member_role_permissions.append(item.permission.title)
-            
+
             member_permissions = workspace_member.member_permissions.select_related(
                 "permission"
             ).all()
