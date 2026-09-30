@@ -80,10 +80,11 @@ class FacebookHandler:
                 channel_post.save()
                 return
 
+            error_message = ""
             channel_post.status = "published"
             channel_post.published_at = datetime.now(timezone.utc)
             channel_post.platform_post_id = res_json.get("id")
-            error_message = ""
+            channel_post.error_message = ""
             channel_post.save()
             return
 

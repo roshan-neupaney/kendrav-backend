@@ -218,6 +218,17 @@ class PostPublishView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
+        if post.status != "draft" and post.status != "scheduled":
+            return Response(
+                {
+                    "message": "Publishing in progress"
+                    if post.status == "pending"
+                    else "Post already published",
+                    "status": status.HTTP_400_BAD_REQUEST,
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
         serializer = PostPublishSerializer(
             post,
             data=request.data,

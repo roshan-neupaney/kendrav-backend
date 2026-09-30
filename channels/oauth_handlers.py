@@ -3,8 +3,6 @@ from django.conf import settings
 from django.core.cache import cache
 import uuid
 
-uuid_key = str(uuid.uuid4())
-
 
 def oauth_handler(slug_url):
     handlers = {"facebook": FacebookHandler}
@@ -34,6 +32,7 @@ class FacebookHandler:
 
     def exchange_token(self, code):
         token_result = self.exchange_code_for_token(code=code)
+        uuid_key = str(uuid.uuid4())
 
         if not token_result.get("status"):
             return token_result
@@ -108,7 +107,7 @@ class FacebookHandler:
                 "channel_data": {
                     "name": page.get("name"),
                     "account_id": page.get("id"),
-                    "profile_picture": page.get("picture")["data"]["url"]
+                    "profile_picture": page.get("picture")["data"]["url"],
                 },
             }
             result.append(data)
@@ -118,13 +117,17 @@ class FacebookHandler:
     def invalidate_token(self, account_id, config):
         return {}
 
-    def test_user_data(self, access_token):
-        user_data = requests.get(
-            "https://graph.facebook.com/v26.0/me",
+    def test_page(self, account_id, config):
+        access_token = config.get("page_access_token")
+        page_data = requests.get(
+            f"https://graph.facebook.com/v24.0/{account_id}/page_status/",
             params={
-                "fields": "id,name",
                 "access_token": access_token,
             },
         ).json()
 
-        return bool(not user_data.get("error") and user_data.get("id"))
+        return bool(
+            not page_data.get("error")
+            and page_data.get("id")
+            and page_data.get("status") == "ok"
+        )

@@ -3,13 +3,12 @@ from channels.models import ChannelPost
 from .post_handlers import post_handler
 from .models import Post
 from datetime import datetime, timezone
+from channels.oauth_handlers import oauth_handler
 
 
 @shared_task
 def publish_post_instantly(post_id):
-    channel_posts = ChannelPost.objects.filter(
-        post=post_id
-    )
+    channel_posts = ChannelPost.objects.filter(post=post_id)
 
     channel_post_list = list(channel_posts.all())
 
@@ -31,6 +30,7 @@ def post_to_each_channel(self, channel_post_id, post_id):
         channel_post.error_message = "Channel is disconnected"
         channel_post.status = "failed"
         channel_post.save()
+        mark_post_status.delay(post_id=post_id)
         return
 
     channel_config = workspace_channel.channel_config
@@ -39,6 +39,10 @@ def post_to_each_channel(self, channel_post_id, post_id):
         channel_post.error_message = "Channel is disconnected"
         channel_post.status = "failed"
         channel_post.save()
+
+        workspace_channel.is_active = False
+        workspace_channel.save()
+        mark_post_status.delay(post_id=post_id)
         return
 
     config = channel_config.config
@@ -46,9 +50,28 @@ def post_to_each_channel(self, channel_post_id, post_id):
         channel_post.error_message = "Channel is disconnected"
         channel_post.status = "failed"
         channel_post.save()
+
+        workspace_channel.is_active = False
+        workspace_channel.save()
+        mark_post_status.delay(post_id=post_id)
         return
 
+    auth_handler = oauth_handler(slug_url=slug_url)
     handler = post_handler(slug_url=slug_url)
+
+    is_healthy = auth_handler.test_page(
+        account_id=workspace_channel.account_id, config=config
+    )
+
+    if not is_healthy:
+        channel_post.status = "failed"
+        channel_post.error_message = "Channel is disconnected"
+        channel_post.save()
+
+        workspace_channel.is_active = False
+        workspace_channel.save()
+        mark_post_status.delay(post_id=post_id)
+        return
 
     try:
         handler.post_to_channel(
@@ -59,6 +82,7 @@ def post_to_each_channel(self, channel_post_id, post_id):
         )
 
         mark_post_status.delay(post_id=post_id)
+
     except Exception as exc:
         if self.request.retries >= self.max_retries:
             channel_post.status = "process_failed"
