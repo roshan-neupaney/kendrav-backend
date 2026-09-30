@@ -1,7 +1,7 @@
-from channels.models import WorkspaceChannel, ChannelConfig
 import requests
 from posts.models import PostMedia
 from datetime import datetime, timezone
+import json
 
 
 def post_handler(slug_url):
@@ -25,6 +25,8 @@ class FacebookHandler:
         media_res_ids = []
         if post_medias_list and len(post_medias_list) > 0:
             for media in post_medias_list:
+                error = None
+                media_upload_fail = False
                 try:
                     for i in range(4):
                         media_response = requests.post(
@@ -38,11 +40,23 @@ class FacebookHandler:
                         if media_response.ok:
                             media_json = media_response.json()
 
-                            media_res_ids.append({"media_fbid": media_json.get("id")})
-                            break
+                            error = media_json.get("error", None)
+                            id = media_json.get("id", None)
+                            if not error and id:
+                                media_res_ids.append({"media_fbid": id})
+                                error = None
+                                media_upload_fail = False
+                                break
+                            media_upload_fail = True
+
+                        error = json.loads(media_response.text).get("error")["message"]
 
                 except Exception as e:
+                    media_upload_fail = True
                     print(e)
+
+                if media_upload_fail:
+                    raise Exception(f"Failed to upload image: {error}")
 
         if post.caption:
             payload["message"] = post.caption
@@ -51,23 +65,32 @@ class FacebookHandler:
 
         payload["attached_media"] = media_res_ids
 
-        error_message = ''
-        for i in range(4):
-            response = requests.post(
-                f"https://graph.facebook.com/v26.0/{account_id}/feed", json=payload
-            )
-            if response.ok:
-                res_json = response.json()
-                channel_post.status = 'published'
-                channel_post.published_at = datetime.now(timezone.utc)
-                channel_post.platform_post_id = res_json.get('id')
-                error_message = ''
+        error_message = ""
+
+        response = requests.post(
+            f"https://graph.facebook.com/v26.0/{account_id}/feed", json=payload
+        )
+        if response.ok:
+            res_json = response.json()
+            error = res_json.get("error", None)
+            if error:
+                error_message = error.get("message", "")
+                channel_post.status = "process_failed"
+                channel_post.error_message = error_message
                 channel_post.save()
                 return
 
-            error_message = response.text
-        
-        channel_post.status = 'process_failed'
-        channel_post.error_message = error_message
-        
+            channel_post.status = "published"
+            channel_post.published_at = datetime.now(timezone.utc)
+            channel_post.platform_post_id = res_json.get("id")
+            error_message = ""
+            channel_post.save()
+            return
+
+        error_message = response.text
+        error_json = json.loads(error_message)
+
+        channel_post.status = "process_failed"
+        channel_post.error_message = error_json.get("error")["message"]
+
         channel_post.save()
