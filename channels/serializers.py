@@ -63,6 +63,8 @@ class WorkspaceChannelSerializer(serializers.ModelSerializer):
             "channel_id",
             "username",
             "account_id",
+            "name",
+            "profile_picture",
             "channel_config",
             "is_active",
             "page_ids",

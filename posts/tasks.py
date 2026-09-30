@@ -95,28 +95,28 @@ def post_to_each_channel(self, channel_post_id, post_id):
 
 @shared_task
 def mark_post_status(post_id):
-    post = Post.objects.prefetch_related("post_channels").filter(id=post_id).first()
-    post_channels = post.post_channels.all()
-    post_channels_list = list(post_channels)
+    post = Post.objects.prefetch_related("channel_posts").filter(id=post_id).first()
+    channel_posts = post.channel_posts.all()
+    channel_posts_list = list(channel_posts)
 
-    is_pending = post_channels.filter(status="pending").exists()
+    is_pending = channel_posts.filter(status="pending").exists()
 
-    failed_post = [cp for cp in post_channels if cp.status == "failed"]
+    failed_post = [cp for cp in channel_posts if cp.status == "failed"]
 
-    process_failed_post = [cp for cp in post_channels if cp.status == "process_failed"]
+    process_failed_post = [cp for cp in channel_posts if cp.status == "process_failed"]
 
     is_some_failed = len(failed_post) > 0 and len(failed_post) != len(
-        post_channels_list
+        channel_posts_list
     )
     is_some_process_failed = len(process_failed_post) > 0 and len(
         process_failed_post
-    ) != len(post_channels_list)
+    ) != len(channel_posts_list)
 
-    is_all_failed = len(failed_post) > 0 and len(failed_post) == len(post_channels_list)
+    is_all_failed = len(failed_post) > 0 and len(failed_post) == len(channel_posts_list)
 
     is_all_process_failed = len(process_failed_post) > 0 and len(
         process_failed_post
-    ) == len(post_channels_list)
+    ) == len(channel_posts_list)
 
     if is_pending:
         post.status = "pending"
@@ -141,3 +141,23 @@ def mark_post_status(post_id):
         post.published_at = datetime.now(timezone.utc)
 
     post.save()
+
+
+@shared_task
+def publish_scheduled_post():
+    now = datetime.now(timezone.utc)
+
+    posts = Post.objects.prefetch_related("channel_posts").filter(
+        status="scheduled", schedule_date_time__lte=now, is_active=True
+    )
+
+    post_list = list(posts.all())
+
+    for post in post_list:
+        channel_posts = list(post.channel_posts.all())
+
+        post.status = 'pending'
+        post.save()
+
+        for cp in channel_posts:
+            post_to_each_channel.delay(channel_post_id=cp.id, post_id=post.id)

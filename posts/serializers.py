@@ -20,6 +20,7 @@ class ChannelPostSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ChannelPost
+        fields = "__all__"
 
 
 class PostSerializer(serializers.ModelSerializer):
@@ -44,7 +45,7 @@ class PostSerializer(serializers.ModelSerializer):
     class Meta:
         model = Post
         fields = "__all__"
-        read_only_fields = ["created_by", "workspace"]
+        read_only_fields = ["created_by", "workspace", "channel_posts"]
 
     def validate(self, attrs):
         schedule_time = attrs.pop("schedule_time", "")
@@ -256,7 +257,7 @@ class PostPublishSerializer(serializers.ModelSerializer):
                 week_no += 1
 
             next_slot = min(available_slot_dates)
-            instance.status = "pending"
+            instance.status = "scheduled"
             instance.schedule_date_time = next_slot
 
         elif post_status == "schedule":
@@ -271,7 +272,7 @@ class PostPublishSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError(
                     "Schedule date time cannot be in past"
                 )
-            instance.status = "pending"
+            instance.status = "scheduled"
 
         instance.save()
 

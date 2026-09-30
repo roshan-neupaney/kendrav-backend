@@ -54,10 +54,10 @@ class ChannelConfig(models.Model):
 
 class ChannelPost(models.Model):
     workspace_channel = models.ForeignKey(
-        WorkspaceChannel, on_delete=models.CASCADE, related_name="channel_posts"
+        WorkspaceChannel, on_delete=models.CASCADE, related_name="workspace_channel_posts"
     )
     post = models.ForeignKey(
-        "posts.Post", on_delete=models.CASCADE, related_name="post_channels"
+        "posts.Post", on_delete=models.CASCADE, related_name="channel_posts"
     )
     status = models.CharField(max_length=50, default="pending", choices=StatusChoices)
     published_at = models.DateTimeField(blank=True, null=True)

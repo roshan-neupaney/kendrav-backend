@@ -125,6 +125,10 @@ CELERY_BEAT_SCHEDULE = {
         'task': 'workspaces.tasks.expire_invitation_task',
         'schedule': 3600.0,
     },
+    'publish-scheduled-posts': {
+        'task': 'posts.tasks.publish_scheduled_post',
+        'schedule': 60,
+    },
 }
 
 CACHES = {
