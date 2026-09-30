@@ -1,13 +1,15 @@
 from celery import shared_task
 from channels.models import ChannelPost
 from .post_handlers import post_handler
+from .models import Post
 
 
 @shared_task
 def publish_post_instantly(post_id):
-    channel_posts = ChannelPost.objects.select_related(
-        "workspace_channel", "post"
-    ).filter(post=post_id)
+    channel_posts = ChannelPost.objects.select_related("workspace_channel").filter(
+        post=post_id
+    )
+    post = Post.objects.filter(id=post_id).first()
 
     channel_post_list = list(channel_posts.all())
 
@@ -19,7 +21,7 @@ def publish_post_instantly(post_id):
             channel_post.error_message = "Channel is deactivated or disconnected"
             channel_post.status = "failed"
             channel_post.save()
-            return
+            continue
 
         channel_config = workspace_channel.channel_config
 
@@ -27,17 +29,15 @@ def publish_post_instantly(post_id):
             channel_post.error_message = "Channel is disconnected"
             channel_post.status = "failed"
             channel_post.save()
-            return
-        
-        config = channel_config.config
-        
-        if not config:
-            channel_post.error_message = 'Channel is disconnected'
-            channel_post.status = 'failed'
-            channel_post.save()
-            return
+            continue
 
-        print("channel_config", channel_config)
+        config = channel_config.config
+
+        if not config:
+            channel_post.error_message = "Channel is disconnected"
+            channel_post.status = "failed"
+            channel_post.save()
+            continue
 
         handler = post_handler(slug_url=slug_url)
 
@@ -45,5 +45,21 @@ def publish_post_instantly(post_id):
             channel_post=channel_post,
             post=channel_post.post,
             config=config,
-            account_id = workspace_channel.account_id
+            account_id=workspace_channel.account_id,
         )
+
+    published_count = sum(1 for cp in channel_post_list if cp.status == "published")
+    failed_count = sum(1 for cp in channel_post_list if cp.status != "published")
+
+    if published_count == 0:
+        post.status = "failed"
+    elif failed_count == 0:
+        post.status = "published"
+    else:
+        post.status = "partial"
+
+    post.save()
+
+@shared_task
+def post_to_each_channel(channel_post):
+    return

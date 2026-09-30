@@ -8,6 +8,7 @@ StatusChoices = [
     ('scheduled', 'Scheduled'),
     ('published', 'Published'),
     ('failed', 'Failed'),
+    ('partial', 'Partial'),
     ('pending', 'Pending'),
     ('process_failed', 'Process Failed'),
     ('for_approval', 'For Approval'),
