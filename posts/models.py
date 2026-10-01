@@ -20,6 +20,11 @@ MediaTypeChoices = [
     ('video', 'Video')
 ]
 
+RequestToChoices = [
+    ('schedule', 'Schedule'),
+    ('"my_time"', '"My Time"'),
+]
+
 class Post(models.Model):
     caption = models.TextField(blank=True, null=True)
     link = models.URLField(blank=True, null=True)
@@ -30,6 +35,7 @@ class Post(models.Model):
     feeling = models.CharField(max_length=255, blank=True, null=True)
     schedule_date_time = models.DateTimeField(blank=True, null=True)
     status = models.CharField(max_length=50, default='draft', choices=StatusChoices)
+    post_request_to = models.CharField(max_length=50, blank=True, null=True, choices=RequestToChoices)
     remarks = models.TextField(blank=True, null=True)
     workspace_channel_ids = models.JSONField(default=list, blank=True)
     pending_started_at = models.DateTimeField(blank=True, null=True)

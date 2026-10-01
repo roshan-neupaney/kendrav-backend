@@ -6,7 +6,7 @@ from rest_framework.permissions import IsAuthenticated
 from .models import Post
 from .serializers import PostSerializer, PostPublishSerializer
 from .pagination import StandardCursorPagination
-from datetime import datetime
+from datetime import datetime, timezone
 from django.db import transaction
 
 
@@ -219,11 +219,19 @@ class PostPublishView(APIView):
             )
 
         if post.status != "draft" and post.status != "scheduled":
+            message = ""
+            if post.status == "pending":
+                message = "Post already publishing"
+            elif post.status == "for_approval":
+                message = "Approval pending"
+            elif post.status == "rejected":
+                message = "Publish request rejected"
+            else:
+                message = "Post already published"
+
             return Response(
                 {
-                    "message": "Post already publishing"
-                    if post.status == "pending"
-                    else "Post already published",
+                    "message": message,
                     "status": status.HTTP_400_BAD_REQUEST,
                 },
                 status=status.HTTP_400_BAD_REQUEST,
@@ -269,32 +277,155 @@ class PostPublishView(APIView):
 class PostApprovalRequestView(APIView):
     def patch(self, request, workspace_id, post_id):
         post = Post.objects.filter(id=post_id, is_active=True).first()
+        reqeust_to = request.data.get("reqeust_to")
 
-        if not post:
-            return Response(
-                {"message": "Post not found", "status": status.HTTP_400_BAD_REQUEST},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+        allowed_requests = ["schedule", "my_time"]
 
-        if post.status != "draft" and post.status != 'rejected':
-            message = ''
-            if post.status == "pending":
-                message ="Post already publishing"
-            elif post.status == 'scheduled':
-                message ="Post already scheduled" 
-            elif post.status == 'for_approval':
-                message ="Post already sent for approval" 
-            else: 
-                message = "Post already published"
+        if not reqeust_to:
             return Response(
                 {
-                    "message": message,
+                    "message": ["Request to field is required"],
                     "status": status.HTTP_400_BAD_REQUEST,
                 },
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
+        if not reqeust_to in allowed_requests:
+            return Response(
+                {
+                    "message": [f"{reqeust_to} is not a valid status"],
+                    "status": status.HTTP_400_BAD_REQUEST,
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if not post:
+            return Response(
+                {"message": ["Post not found"], "status": status.HTTP_400_BAD_REQUEST},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if post.status != "draft" and post.status != "rejected":
+            message = ""
+            if post.status == "pending":
+                message = "Post already publishing"
+            elif post.status == "scheduled":
+                message = "Post already scheduled"
+            elif post.status == "for_approval":
+                message = "Post already sent for approval"
+            else:
+                message = "Post already published"
+            return Response(
+                {
+                    "message": [message],
+                    "status": status.HTTP_400_BAD_REQUEST,
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if reqeust_to == "schedule":
+            schedule_date_time = post.schedule_date_time
+            if not schedule_date_time:
+                return Response(
+                    {
+                        "message": ["Schedule date time is required"],
+                        "status": status.HTTP_400_BAD_REQUEST,
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            now = datetime.now(timezone.utc)
+            if schedule_date_time < now:
+                return Response(
+                    {
+                        "message": ["Schedule date time cannot be in past"],
+                        "status": status.HTTP_400_BAD_REQUEST,
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
         post.status = "for_approval"
+        post.post_request_to = reqeust_to
+        post.save()
+
+        return Response(
+            {
+                "message": "Request sent for approval",
+                "status": status.HTTP_200_OK,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+
+class PostApproveView(APIView):
+    def patch(self, request, workspace_id, post_id):
+        post = Post.objects.filter(
+            id=post_id, is_active=True, status="for_approval"
+        ).first()
+
+        if not post:
+            return Response(
+                {"message": ["Post not found"], "status": status.HTTP_400_BAD_REQUEST},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        request_to = post.post_request_to
+
+        serializer = PostPublishSerializer(
+            post,
+            data={"post_status": request_to},
+            context={"workspace_id": workspace_id, "request": request},
+            partial=True,
+        )
+
+        post.post_request_to = None
+
+        if serializer.is_valid(raise_exception=True):
+            with transaction.atomic():
+                serializer.save()
+
+                return Response(
+                    {
+                        "message": "Post approved",
+                        "status": status.HTTP_200_OK,
+                        "data": serializer.data,
+                    },
+                    status=status.HTTP_200_OK,
+                )
+
+        return Response(
+            {
+                "message": serializer.error_messages,
+                "status": status.HTTP_400_BAD_REQUEST,
+            },
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+
+class PostRejectView(APIView):
+    def patch(self, request, workspace_id, post_id):
+        remarks = request.data.get("remarks")
+
+        if not remarks:
+            return Response(
+                {
+                    "message": ["Remarks is required"],
+                    "status": status.HTTP_400_BAD_REQUEST,
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        post = Post.objects.filter(
+            id=post_id, is_active=True, status="for_approval"
+        ).first()
+
+        if not post:
+            return Response(
+                {"message": ["Post not found"], "status": status.HTTP_400_BAD_REQUEST},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        post.status = "rejected"
         post.save()
 
         return Response(
