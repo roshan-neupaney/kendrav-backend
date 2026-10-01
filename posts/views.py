@@ -275,13 +275,15 @@ class PostPublishView(APIView):
 
 
 class PostApprovalRequestView(APIView):
+    permission_classes = [HasWorkspacePermission("post:can_request_approval")]
+
     def patch(self, request, workspace_id, post_id):
         post = Post.objects.filter(id=post_id, is_active=True).first()
-        reqeust_to = request.data.get("reqeust_to")
+        request_to = request.data.get("request_to")
 
         allowed_requests = ["schedule", "my_time"]
 
-        if not reqeust_to:
+        if not request_to:
             return Response(
                 {
                     "message": ["Request to field is required"],
@@ -290,10 +292,10 @@ class PostApprovalRequestView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        if not reqeust_to in allowed_requests:
+        if not request_to in allowed_requests:
             return Response(
                 {
-                    "message": [f"{reqeust_to} is not a valid status"],
+                    "message": [f"{request_to} is not a valid status"],
                     "status": status.HTTP_400_BAD_REQUEST,
                 },
                 status=status.HTTP_400_BAD_REQUEST,
@@ -323,7 +325,7 @@ class PostApprovalRequestView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        if reqeust_to == "schedule":
+        if request_to == "schedule":
             schedule_date_time = post.schedule_date_time
             if not schedule_date_time:
                 return Response(
@@ -345,7 +347,7 @@ class PostApprovalRequestView(APIView):
                 )
 
         post.status = "for_approval"
-        post.post_request_to = reqeust_to
+        post.post_request_to = request_to
         post.save()
 
         return Response(
@@ -358,6 +360,8 @@ class PostApprovalRequestView(APIView):
 
 
 class PostApproveView(APIView):
+    permission_classes = [HasWorkspacePermission("post:can_approve")]
+
     def patch(self, request, workspace_id, post_id):
         post = Post.objects.filter(
             id=post_id, is_active=True, status="for_approval"
@@ -371,9 +375,12 @@ class PostApproveView(APIView):
 
         request_to = post.post_request_to
 
+        data = request.data
+        data['post_status'] = request_to
+
         serializer = PostPublishSerializer(
             post,
-            data={"post_status": request_to},
+            data=data,
             context={"workspace_id": workspace_id, "request": request},
             partial=True,
         )
@@ -383,7 +390,6 @@ class PostApproveView(APIView):
         if serializer.is_valid(raise_exception=True):
             with transaction.atomic():
                 serializer.save()
-
                 return Response(
                     {
                         "message": "Post approved",
@@ -403,6 +409,7 @@ class PostApproveView(APIView):
 
 
 class PostRejectView(APIView):
+    permission_classes = [HasWorkspacePermission("post:can_approve")]
     def patch(self, request, workspace_id, post_id):
         remarks = request.data.get("remarks")
 
@@ -426,11 +433,13 @@ class PostRejectView(APIView):
             )
 
         post.status = "rejected"
+        post.remarks = remarks
+        post.post_request_to = None
         post.save()
 
         return Response(
             {
-                "message": "Request sent for approval",
+                "message": "Post rejected",
                 "status": status.HTTP_200_OK,
             },
             status=status.HTTP_200_OK,

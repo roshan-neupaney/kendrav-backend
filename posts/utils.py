@@ -23,11 +23,13 @@ def get_next_time_slot(workspace_id, user):
     my_times = MyTime.objects.filter(is_active=True, workspace=workspace_id)
     my_time_list = list(my_times.all())
 
+    if not len(my_time_list) > 0:
+        return
+
     available_slot_dates = []
 
     now = datetime.now(timezone.utc)
     today = now.isoweekday()
-
     week_no = 1
 
     while not len(available_slot_dates) > 0:

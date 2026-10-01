@@ -228,6 +228,8 @@ class PostPublishSerializer(serializers.ModelSerializer):
 
         if post_status == "my_time":
             next_slot = get_next_time_slot(workspace_id=workspace_id, user=user)
+            if not next_slot:
+                raise serializers.ValidationError('No time slots available')
             instance.status = "scheduled"
             instance.schedule_date_time = next_slot
 
@@ -248,6 +250,3 @@ class PostPublishSerializer(serializers.ModelSerializer):
         instance.save()
 
         return instance
-
-
-# class PostApprovalRequestSerializer(serializers.ModelSerializer):
