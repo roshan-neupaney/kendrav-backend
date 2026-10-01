@@ -295,3 +295,6 @@ class PostPublishSerializer(serializers.ModelSerializer):
         instance.save()
 
         return instance
+
+
+# class PostApprovalRequestSerializer(serializers.ModelSerializer):

@@ -221,7 +221,7 @@ class PostPublishView(APIView):
         if post.status != "draft" and post.status != "scheduled":
             return Response(
                 {
-                    "message": "Publishing in progress"
+                    "message": "Post already publishing"
                     if post.status == "pending"
                     else "Post already published",
                     "status": status.HTTP_400_BAD_REQUEST,
@@ -266,4 +266,41 @@ class PostPublishView(APIView):
         )
 
 
-# class PostApprovalRequestView(APIView):
+class PostApprovalRequestView(APIView):
+    def patch(self, request, workspace_id, post_id):
+        post = Post.objects.filter(id=post_id, is_active=True).first()
+
+        if not post:
+            return Response(
+                {"message": "Post not found", "status": status.HTTP_400_BAD_REQUEST},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if post.status != "draft" and post.status != 'rejected':
+            message = ''
+            if post.status == "pending":
+                message ="Post already publishing"
+            elif post.status == 'scheduled':
+                message ="Post already scheduled" 
+            elif post.status == 'for_approval':
+                message ="Post already sent for approval" 
+            else: 
+                message = "Post already published"
+            return Response(
+                {
+                    "message": message,
+                    "status": status.HTTP_400_BAD_REQUEST,
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        post.status = "for_approval"
+        post.save()
+
+        return Response(
+            {
+                "message": "Request sent for approval",
+                "status": status.HTTP_200_OK,
+            },
+            status=status.HTTP_200_OK,
+        )
