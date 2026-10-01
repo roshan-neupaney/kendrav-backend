@@ -93,22 +93,23 @@ class PostSerializer(serializers.ModelSerializer):
         for key, value in validated_data.items():
             setattr(instance, key, value)
 
+        objects_to_create = []
+        objects_to_update = []
+
         if post_media and len(post_media) > 0:
             fields_to_update = set()
 
-            objects_to_create = []
-            objects_to_update = []
 
             for item in post_media:
                 post_media_id = item.pop("id", None)
+                post_media_order = item.pop('order', len(post_media)-1)
 
                 if post_media_id:
-                    update_media_instance = PostMedia(id=post_media_id, post=instance)
-
-                    for key, value in item.items():
-                        if key != "id":
-                            setattr(update_media_instance, key, value)
-                            fields_to_update.add(key)
+                    update_media_instance = PostMedia.objects.filter(id=post_media_id, post=instance).first()
+                    # update_media_instance = PostMedia(id=post_media_id, post=instance)
+                    update_media_instance.order = post_media_order
+                    update_media_instance.is_active = True
+                    fields_to_update.add(key)
 
                     objects_to_update.append(update_media_instance)
 
@@ -116,20 +117,22 @@ class PostSerializer(serializers.ModelSerializer):
                     create_media_instance = PostMedia(**item, post=instance)
                     objects_to_create.append(create_media_instance)
 
-            if delete_medias and len(delete_medias) > 0:
-                delete_instances = PostMedia.objects.filter(id__in=delete_medias)
-                for delete_instance in delete_instances:
-                    delete_instance.is_active = False
-                    fields_to_update.add("is_active")
-                    objects_to_update.append(delete_instance)
+        print('delete', delete_medias)
+        if delete_medias and len(delete_medias) > 0:
+            delete_instances = PostMedia.objects.filte(id__in=delete_medias)
+            print(delete_instances)
+            for delete_instance in delete_instances:
+                delete_instance.is_active = False
+                fields_to_update.add("is_active")
+                objects_to_update.append(delete_instance)
 
-            if objects_to_create:
-                PostMedia.objects.bulk_create(objects_to_create)
+        if objects_to_create:
+            PostMedia.objects.bulk_create(objects_to_create)
 
-            if objects_to_update and fields_to_update:
-                PostMedia.objects.bulk_update(
-                    objects_to_update, fields=fields_to_update
-                )
+        if objects_to_update and fields_to_update:
+            PostMedia.objects.bulk_update(
+                objects_to_update, fields=fields_to_update
+            )
 
         instance.save()
 
