@@ -8,6 +8,7 @@ StatusChoices = [
     ('scheduled', 'Scheduled'),
     ('published', 'Published'),
     ('failed', 'Failed'),
+    ('partial', 'Partial'),
     ('pending', 'Pending'),
     ('process_failed', 'Process Failed'),
     ('for_approval', 'For Approval'),
@@ -19,16 +20,24 @@ MediaTypeChoices = [
     ('video', 'Video')
 ]
 
+RequestToChoices = [
+    ('schedule', 'Schedule'),
+    ('"my_time"', '"My Time"'),
+]
+
 class Post(models.Model):
     caption = models.TextField(blank=True, null=True)
+    link = models.URLField(blank=True, null=True)
     workspace = models.ForeignKey('workspaces.Workspace', on_delete=models.CASCADE, related_name='posts')
     created_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='posts')
     location = models.CharField(max_length=255, blank=True, null=True)
     music = models.CharField(max_length=255, blank=True, null=True)
     feeling = models.CharField(max_length=255, blank=True, null=True)
-    schedule_time = models.DateTimeField(blank=True, null=True)
+    schedule_date_time = models.DateTimeField(blank=True, null=True)
     status = models.CharField(max_length=50, default='draft', choices=StatusChoices)
+    post_request_to = models.CharField(max_length=50, blank=True, null=True, choices=RequestToChoices)
     remarks = models.TextField(blank=True, null=True)
+    workspace_channel_ids = models.JSONField(default=list, blank=True)
     pending_started_at = models.DateTimeField(blank=True, null=True)
     published_at = models.DateTimeField(blank=True, null=True)
     is_active = models.BooleanField(default=True)
@@ -39,6 +48,7 @@ class PostMedia(models.Model):
     media_url = models.CharField(max_length=300)
     media_type = models.CharField(max_length=50, choices=MediaTypeChoices)
     order = models.IntegerField(default=0)
-    post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='post_media')
+    is_active = models.BooleanField(default=True)
+    post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='post_medias')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

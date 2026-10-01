@@ -67,6 +67,10 @@ REST_FRAMEWORK = {
         "rest_framework.permissions.IsAuthenticated",
     ],
     "EXCEPTION_HANDLER": "authentication.exceptions.custom_exception_handler",
+    'DEFAULT_PAGINATION_CLASS': (
+        'posts.pagination.StandardCursorPagination'
+    ),
+    'PAGE_SIZE': 20,
 }
 
 REST_AUTH = {
@@ -120,6 +124,10 @@ CELERY_BEAT_SCHEDULE = {
     'mark-expired-invites': {
         'task': 'workspaces.tasks.expire_invitation_task',
         'schedule': 3600.0,
+    },
+    'publish-scheduled-posts': {
+        'task': 'posts.tasks.publish_scheduled_post',
+        'schedule': 60,
     },
 }
 

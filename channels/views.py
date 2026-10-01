@@ -3,17 +3,22 @@ from rest_framework.response import Response
 from rest_framework import status
 from users.permission import IsSuperAdmin
 from .models import Channel, WorkspaceChannel
-from .serializers import ChannelSerializer, WorkspaceChannelSerializer
+from .serializers import (
+    ChannelSerializer,
+    WorkspaceChannelSerializer,
+    ExchangeCodeSerializer,
+)
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from workspaces.permission import IsWorkspaceMember, HasWorkspacePermission
 from .oauth_handlers import oauth_handler
 from datetime import datetime, timezone
+from django.db import transaction
 
 
 class ChannelView(APIView):
-    # def get_permissions(self):
-    #     method_permissions = {"GET": [AllowAny()], "POST": [IsSuperAdmin()]}
-    #     return method_permissions.get(self.request.method, [IsAuthenticated()])
+    def get_permissions(self):
+        method_permissions = {"GET": [AllowAny()], "POST": [IsSuperAdmin()]}
+        return method_permissions.get(self.request.method, [IsAuthenticated()])
 
     def get(self, request):
         channel = Channel.objects.filter(is_active=True)
@@ -99,6 +104,50 @@ class ChannelWithIdView(APIView):
         )
 
 
+class ExchangeCodeView(APIView):
+    def post(self, request, workspace_id):
+        serializer = ExchangeCodeSerializer(data=request.data)
+
+        if serializer.is_valid(raise_exception=True):
+            code = serializer.validated_data.get("code")
+            channel = serializer.validated_data.get("channel_id")
+
+            handler = oauth_handler(slug_url=channel.slug_url)
+            result = handler.exchange_token(code=code)
+
+            result_status = result.get("status", False)
+
+            data = result.get("data")
+            if data:
+                for page in data:
+                    workspace_channel = WorkspaceChannel.objects.filter(
+                        workspace_id=workspace_id,
+                        account_id=page.get("id"),
+                        is_active=True,
+                    ).first()
+                    page["is_connnected"] = bool(workspace_channel)
+
+            return Response(
+                {
+                    "message": "Page list retrived successfully",
+                    "status": status.HTTP_200_OK
+                    if result_status
+                    else status.HTTP_400_BAD_REQUEST,
+                    "data": result,
+                },
+                status=status.HTTP_200_OK
+                if result_status
+                else status.HTTP_400_BAD_REQUEST,
+            )
+        return Response(
+            {
+                "message": serializer.error_messages,
+                "status": status.HTTP_400_BAD_REQUEST,
+            },
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+
 class WorkspaceChannelView(APIView):
     def get_permissions(self):
         method_permissions = {
@@ -126,24 +175,26 @@ class WorkspaceChannelView(APIView):
         )
 
     def post(self, request, workspace_id):
-        serailzer = WorkspaceChannelSerializer(
+        serializer = WorkspaceChannelSerializer(
             data=request.data, context={"workspace_id": workspace_id}
         )
 
-        if serailzer.is_valid(raise_exception=True):
-            serailzer.save()
-            return Response(
-                {
-                    "message": "Workspace channel retrieved successfully",
-                    "status": status.HTTP_200_OK,
-                    "data": serailzer.data,
-                },
-                status=status.HTTP_200_OK,
-            )
+        if serializer.is_valid(raise_exception=True):
+            with transaction.atomic():
+                result = serializer.save()
+
+                return Response(
+                    {
+                        "message": "User channel connected successfully",
+                        "status": status.HTTP_200_OK,
+                        "data": result,
+                    },
+                    status=status.HTTP_200_OK,
+                )
 
         return Response(
             {
-                "message": serailzer.error_messages,
+                "message": serializer.error_messages,
                 "status": status.HTTP_400_BAD_REQUEST,
             },
             status=status.HTTP_400_BAD_REQUEST,
@@ -171,18 +222,17 @@ class WorkspaceChannelWithIdView(APIView):
         if workspace_channel is None:
             return Response(
                 {
-                    "message": "Workspace Channel not found",
+                    "message": "User Channel not found",
                     "status": status.HTTP_400_BAD_REQUEST,
                 },
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
         config = workspace_channel.channel_config.config
-        access_token = config.get("access_token", "")
 
-        if access_token:
+        if config:
             handler = oauth_handler(workspace_channel.channel.slug_url)
-            handler.invalidate_token(workspace_channel.account_id, access_token)
+            handler.invalidate_token(workspace_channel.account_id, config)
 
         workspace_channel.is_active = False
         workspace_channel.channel_config.config = {}
@@ -190,7 +240,7 @@ class WorkspaceChannelWithIdView(APIView):
         workspace_channel.save()
         return Response(
             {
-                "message": "Workspace Channel Disconnected Successfully",
+                "message": "Channel disconnected successfully",
                 "status": status.HTTP_200_OK,
             },
             status=status.HTTP_200_OK,

@@ -1,6 +1,7 @@
 import requests
 from django.conf import settings
-from datetime import datetime, timedelta, timezone
+from django.core.cache import cache
+import uuid
 
 
 def oauth_handler(slug_url):
@@ -31,6 +32,7 @@ class FacebookHandler:
 
     def exchange_token(self, code):
         token_result = self.exchange_code_for_token(code=code)
+        uuid_key = str(uuid.uuid4())
 
         if not token_result.get("status"):
             return token_result
@@ -50,48 +52,82 @@ class FacebookHandler:
         if error:
             return {"message": error["message"], "status": False}
 
-        user_data = requests.get(
-            "https://graph.facebook.com/v26.0/me",
+        user_access_token = res.get("access_token")
+        user_page_data = requests.get(
+            "https://graph.facebook.com/v26.0/me/accounts",
             params={
-                "fields": "id,name,picture",
-                "access_token": res.get("access_token"),
+                "fields": "id,name,page_token,picture,access_token",
+                "access_token": user_access_token,
             },
         ).json()
 
-        error = user_data.get("error", "")
+        error = user_page_data.get("error", "")
         if error:
             return {"message": error["message"], "status": False}
 
-        profile_picture = user_data.get("picture")["data"]["url"]
+        page_list = user_page_data.get("data")
 
-        expires_in = res.get("expires_in")
-        if expires_in:
-            expires_at = datetime.now(timezone.utc) + timedelta(seconds=expires_in)
-        else:
-            expires_at = None
+        updated_page_list = []
+
+        for page in page_list:
+            temp_page = page.copy()
+            temp_page["user_access_token"] = user_access_token
+            updated_page_list.append(temp_page)
+
+        cache.set(
+            f"user_page_list:{uuid_key}",
+            {"pages": updated_page_list, "channel": "facebook"},
+            timeout=3000,
+        )
+
+        list_to_return = []
+
+        for page in page_list:
+            page.pop("access_token")
+            list_to_return.append(page)
+
+        has_pages = len(list_to_return) > 0
 
         return {
-            "access_token": res.get("access_token"),
-            "expires_at": expires_at,
-            "full_name": user_data.get("name", ""),
-            "account_id": user_data.get("id", ""),
-            "profile_picture": profile_picture,
+            "data": list_to_return if has_pages else None,
+            "required_page_selection": has_pages,
+            "uuid": uuid_key,
             "status": True,
         }
 
-    def invalidate_token(self, account_id, access_token):
-        requests.delete(
-            f"https://graph.facebook.com/v26.0/{account_id}/permissions",
-            params={"access_token": access_token},
-        )
+    def get_page_data(self, pages):
+        result = []
 
-    def test_user_data(self, access_token):
-        user_data = requests.get(
-            "https://graph.facebook.com/v26.0/me",
+        for page in pages:
+            data = {
+                "channel_config": {
+                    "user_access_token": page.get("user_access_token"),
+                    "page_access_token": page.get("access_token"),
+                },
+                "channel_data": {
+                    "name": page.get("name"),
+                    "account_id": page.get("id"),
+                    "profile_picture": page.get("picture")["data"]["url"],
+                },
+            }
+            result.append(data)
+
+        return result
+
+    def invalidate_token(self, account_id, config):
+        return {}
+
+    def test_page(self, account_id, config):
+        access_token = config.get("page_access_token")
+        page_data = requests.get(
+            f"https://graph.facebook.com/v24.0/{account_id}/page_status/",
             params={
-                "fields": "id,name",
                 "access_token": access_token,
             },
         ).json()
-        
-        return bool(not user_data.get('error') and user_data.get('id'))
+
+        return bool(
+            not page_data.get("error")
+            and page_data.get("id")
+            and page_data.get("status") == "ok"
+        )

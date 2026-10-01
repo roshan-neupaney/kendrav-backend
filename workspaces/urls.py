@@ -89,21 +89,6 @@ urlpatterns = [
         name="workspace-permissions",
     ),
     path(
-        "<int:workspace_id>/channel/",
-        WorkspaceChannelView.as_view(),
-        name="workspace-channel",
-    ),
-    path(
-        "<int:workspace_id>/channel/<int:workspace_channel_id>/",
-        WorkspaceChannelWithIdView.as_view(),
-        name="workspace-channel-with-id",
-    ),
-    path(
-        "channel/<int:workspace_channel_id>/",
-        WorkspaceChannelHealthView.as_view(),
-        name="workspace-channel-health",
-    ),
-    path(
         "<int:workspace_id>/my-times/",
         WorkspaceMyTimeView.as_view(),
         name="workspace-my-times",
