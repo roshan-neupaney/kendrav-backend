@@ -4,21 +4,24 @@ from workspaces.models import WorkspaceMember, RolePermission
 
 class IsWorkspaceMember(BasePermission):
     def has_permission(self, request, view):
-        workspace_id = request.headers.get('workspaceId')
+        workspace_id = view.kwargs.get("workspace_id") or request.headers.get(
+            "workspaceId"
+        )
         user = request.user
         if not workspace_id:
             return False
         workspace_member = WorkspaceMember.objects.filter(
             user=user, workspace_id=workspace_id, is_active=True
         ).first()
-        # print(bool(workspace_member))
         return bool(workspace_member)
 
 
 def HasWorkspacePermission(required_permission):
     class _HasWorkspacePermission(BasePermission):
         def has_permission(self, request, view):
-            workspace_id = request.headers.get('workspaceId')
+            workspace_id = view.kwargs.get("workspace_id") or request.headers.get(
+                "workspaceId"
+            )
             user = request.user
             member_role_permissions = []
             workspace_member = (

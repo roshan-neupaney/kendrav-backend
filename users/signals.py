@@ -2,7 +2,7 @@ from django.db.models.signals import post_save
 from django.contrib.auth import get_user_model
 from django.dispatch import receiver
 from .models import Profile, Preference, UserSubscription
-from workspaces.models import Workspace, WorkspaceMember
+from workspaces.models import Workspace, WorkspaceMember, Role, Permission, RolePermission, WorkspaceMemberRole
 from notifications.models import NotificationPreference
 from subscriptions.models import Subscription
 from workspaces.utils import generate_workspace_slug
@@ -38,7 +38,20 @@ def create_user_profile(sender, instance, created, **kwargs):
         )
         workspace.slug_url = generate_workspace_slug("Personal", workspace.id)
         workspace.save()
-        WorkspaceMember.objects.create(user=instance, workspace=workspace)
+        workspace_member = WorkspaceMember.objects.create(user=instance, workspace=workspace)
+        role = Role.objects.create(workspace=workspace, title="Admin")
+
+        WorkspaceMemberRole.objects.create(workspace_member=workspace_member, role=role)
+
+        permissions = Permission.objects.filter(is_active=True)
+
+        role_permission_instances = [
+            RolePermission(role=role, permission=permission)
+            for permission in permissions
+        ]
+
+        RolePermission.objects.bulk_create(role_permission_instances)
+        
         for notification_type, _ in notification_types:
             NotificationPreference.objects.create(
                 user=instance, notification_type=notification_type, is_permitted=True

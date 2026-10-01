@@ -8,9 +8,11 @@ from .models import (
     WorkspaceMemberInvite,
     WorkspaceMemberRole,
     WorkspaceMemberPermission,
+    MyTime
 )
 from rest_framework import serializers
-from .utils import generate_workspace_slug, send_invite_email
+from .utils import generate_workspace_slug
+from .tasks import send_invite_email_task
 from django.contrib.auth import get_user_model
 from users.serializers import ProfileSerializer
 from datetime import datetime, timedelta, timezone
@@ -40,9 +42,22 @@ class WorkspaceSerializer(serializers.ModelSerializer):
         workspace.slug_url = generate_workspace_slug(title, workspace_id=workspace.id)
         workspace.save()
 
-        WorkspaceMember.objects.create(
+        workspace_member = WorkspaceMember.objects.create(
             user=self.context["request"].user, workspace=workspace
         )
+
+        role = Role.objects.create(workspace=workspace, title="Admin")
+
+        WorkspaceMemberRole.objects.create(workspace_member=workspace_member, role=role)
+
+        permissions = Permission.objects.filter(is_active=True)
+
+        role_permission_instances = [
+            RolePermission(role=role, permission=permission)
+            for permission in permissions
+        ]
+
+        RolePermission.objects.bulk_create(role_permission_instances)
 
         return workspace
 
@@ -160,7 +175,7 @@ class WorkspaceMemberInviteSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         now = datetime.now(timezone.utc)
-        expires_at = now + timedelta(days=3)
+        expires_at = now + timedelta(seconds=30)
         user = self.context.get("user", "")
         workspace_id = self.context.get("workspace_id", "")
 
@@ -186,7 +201,7 @@ class WorkspaceMemberInviteSerializer(serializers.ModelSerializer):
 
         frontend_url = settings.FRONTEND_BASE_URL
         invite_link = f"{frontend_url}/invitation/?token={token}"
-        send_invite_email(
+        send_invite_email_task.delay(
             inviter_name=full_name,
             workspace_title=workspace_title,
             role_title=role_title,
@@ -393,4 +408,11 @@ class RolePermissionSerializer(serializers.ModelSerializer):
 class WorkspacePermissionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Permission
-        fields = ['id', 'title']
+        fields = ["id", "title"]
+
+
+class WorkspaceMyTimeSerializer(serializers.ModelSerializer):
+    workspace = serializers.PrimaryKeyRelatedField(queryset=Workspace.objects.all(), write_only=True)
+    class Meta:
+        model= MyTime
+        fields = ['id', 'day', 'time', 'workspace_id', 'is_active', 'created_at', 'updated_at', "workspace"]

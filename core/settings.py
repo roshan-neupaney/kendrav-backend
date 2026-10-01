@@ -67,6 +67,10 @@ REST_FRAMEWORK = {
         "rest_framework.permissions.IsAuthenticated",
     ],
     "EXCEPTION_HANDLER": "authentication.exceptions.custom_exception_handler",
+    'DEFAULT_PAGINATION_CLASS': (
+        'posts.pagination.StandardCursorPagination'
+    ),
+    'PAGE_SIZE': 20,
 }
 
 REST_AUTH = {
@@ -114,6 +118,18 @@ SOCIALACCOUNT_PROVIDERS = {
 CELERY_BROKER_URL = env("REDIS_URL")
 CELERY_RESULT_BACKEND = env("REDIS_URL")
 CELERY_TIMEZONE = 'UTC'
+CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
+
+CELERY_BEAT_SCHEDULE = {
+    'mark-expired-invites': {
+        'task': 'workspaces.tasks.expire_invitation_task',
+        'schedule': 3600.0,
+    },
+    'publish-scheduled-posts': {
+        'task': 'posts.tasks.publish_scheduled_post',
+        'schedule': 60,
+    },
+}
 
 CACHES = {
     "default": {
@@ -128,6 +144,9 @@ CACHES = {
         }
     }
 }
+
+FACEBOOK_APP_ID="957260226693711"
+FACEBOOK_APP_SECRET= "90879b9e8d7e2ca905388e02d8e310e1"
 
 # Allauth Settings
 ACCOUNT_UNIQUE_EMAIL = True
