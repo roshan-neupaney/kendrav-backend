@@ -7,6 +7,7 @@ from datetime import datetime, timezone, timedelta
 from .tasks import publish_post_instantly
 from zoneinfo import ZoneInfo
 from .utils import convert_to_user_timezone
+import mimetypes
 
 
 class PostMediaSerializer(serializers.ModelSerializer):
@@ -95,32 +96,48 @@ class PostSerializer(serializers.ModelSerializer):
 
         objects_to_create = []
         objects_to_update = []
+        fields_to_update = set()
 
         if post_media and len(post_media) > 0:
-            fields_to_update = set()
-
-
             for item in post_media:
                 post_media_id = item.pop("id", None)
-                post_media_order = item.pop('order', len(post_media)-1)
+                post_media_order = item.pop("order", len(post_media) - 1)
 
                 if post_media_id:
-                    update_media_instance = PostMedia.objects.filter(id=post_media_id, post=instance).first()
-                    # update_media_instance = PostMedia(id=post_media_id, post=instance)
-                    update_media_instance.order = post_media_order
-                    update_media_instance.is_active = True
-                    fields_to_update.add(key)
+                    update_media_instance = PostMedia.objects.filter(
+                        id=post_media_id
+                    ).first()
 
-                    objects_to_update.append(update_media_instance)
+                    if update_media_instance:
+                        update_media_instance.order = post_media_order
+                        fields_to_update.add("order")
+                        update_media_instance.is_active = True
+                        fields_to_update.add("is_active")
+
+                        objects_to_update.append(update_media_instance)
 
                 else:
-                    create_media_instance = PostMedia(**item, post=instance)
+                    media_url = item.pop("media_url", None)
+                    media_type = item.pop("media_type", None)
+
+                    if not media_url:
+                        raise serializers.ValidationError("Media url is required")
+
+                    if not media_type:
+                        raise serializers.ValidationError("Media type is required")
+
+                    create_media_instance = PostMedia(
+                        media_url=media_url,
+                        media_type=media_type,
+                        order=post_media_order,
+                        is_active=True,
+                        post=instance,
+                    )
                     objects_to_create.append(create_media_instance)
 
-        print('delete', delete_medias)
         if delete_medias and len(delete_medias) > 0:
-            delete_instances = PostMedia.objects.filte(id__in=delete_medias)
-            print(delete_instances)
+            delete_instances = PostMedia.objects.filter(id__in=delete_medias, is_active=True)
+
             for delete_instance in delete_instances:
                 delete_instance.is_active = False
                 fields_to_update.add("is_active")
@@ -130,9 +147,7 @@ class PostSerializer(serializers.ModelSerializer):
             PostMedia.objects.bulk_create(objects_to_create)
 
         if objects_to_update and fields_to_update:
-            PostMedia.objects.bulk_update(
-                objects_to_update, fields=fields_to_update
-            )
+            PostMedia.objects.bulk_update(objects_to_update, fields=fields_to_update)
 
         instance.save()
 
