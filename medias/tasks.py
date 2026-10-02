@@ -6,10 +6,16 @@ import cloudinary.api
 
 @shared_task
 def cleanup_cloudinary_media():
-    valid_time = datetime.now(timezone.utc) - timedelta(hours=settings.IMAGE_CLEAN_UP_INTERVAL)
-    # post_medias = PostMedia.objects.filter(is_active=False, updated_at__lte = valid_time)
+    valid_time = datetime.now(timezone.utc) - timedelta(seconds=settings.IMAGE_CLEAN_UP_INTERVAL)
+    post_medias = PostMedia.objects.filter(is_active=False, updated_at__lte=valid_time)
 
-    public_ids = ['post/Screenshot from 2026-10-02 11-14-12.png', 'post/Screenshot from 2026-10-02 11-14-12.png_1790944733']
-    # for media in post_medias:
-    #     public_id = media.media_url.public_id
-    cloudinary.api.delete_resources(public_ids)
+    public_ids = []
+    for media in post_medias:
+        public_id = media.public_id
+        if public_id:
+            public_ids.append(public_id)
+
+    if len(public_ids) > 0:
+        result = cloudinary.api.delete_resources(public_ids)
+        print(result)
+    
