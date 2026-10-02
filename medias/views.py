@@ -20,13 +20,6 @@ class SignedUploadCredentialsView(APIView):
             cloud_name = settings.CLOUDINARY_CLOUD_NAME
             timestamp = int(time.time())
 
-            cloudinary.config(
-                cloud_name=cloud_name,
-                api_key=api_key,
-                api_secret=api_secret,
-                secure=True,
-            )
-
             params_to_sign = {
                 "timestamp": timestamp,
                 "public_id": file_name,
@@ -46,6 +39,7 @@ class SignedUploadCredentialsView(APIView):
                         "cloud_name": cloud_name,
                         "timestamp": timestamp,
                         "folder": context,
+                        "public_id": file_name,
                     },
                     "status": status.HTTP_200_OK,
                 },
