@@ -130,6 +130,10 @@ CELERY_BEAT_SCHEDULE = {
         'task': 'posts.tasks.publish_scheduled_post',
         'schedule': 60,
     },
+    'cleanup-cloudinary-media': {
+        'task': 'medias.tasks.cleanup_cloudinary_media',
+        'schedule': 10,
+    },
 }
 
 CACHES = {
@@ -292,3 +296,5 @@ cloudinary.config(
     api_secret=CLOUDINARY_API_SECRET,
     secure=True
 )
+
+IMAGE_CLEAN_UP_INTERVAL = 8

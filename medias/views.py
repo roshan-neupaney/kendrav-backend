@@ -22,7 +22,7 @@ class SignedUploadCredentialsView(APIView):
 
             params_to_sign = {
                 "timestamp": timestamp,
-                "public_id": file_name,
+                "public_id": f"{file_name}_{timestamp}",
                 "folder": context,
             }
 
@@ -39,7 +39,7 @@ class SignedUploadCredentialsView(APIView):
                         "cloud_name": cloud_name,
                         "timestamp": timestamp,
                         "folder": context,
-                        "public_id": file_name,
+                        "public_id": f"{file_name}_{timestamp}",
                     },
                     "status": status.HTTP_200_OK,
                 },
