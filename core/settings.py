@@ -2,6 +2,10 @@ import environ
 from pathlib import Path
 from datetime import timedelta
 import cloudinary
+import firebase_admin
+from firebase_admin import credentials
+import json
+import os
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -22,7 +26,9 @@ ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=["127.0.0.1", "localhost"])
 
 SITE_ID = 1
 
-CORS_ALLOWED_ORIGINS = env.list('CORS_ALLOWED_ORIGINS', default=['http://localhost:5173'])
+CORS_ALLOWED_ORIGINS = env.list(
+    "CORS_ALLOWED_ORIGINS", default=["http://localhost:5173"]
+)
 
 CORS_ALLOW_CREDENTIALS = True
 
@@ -41,7 +47,6 @@ INSTALLED_APPS = [
     "allauth.account",
     "allauth.socialaccount",
     "allauth.socialaccount.providers.google",
-
     "users",
     "authentication",
     "notifications",
@@ -53,11 +58,10 @@ INSTALLED_APPS = [
     "channels",
     "ideas",
     "medias",
-
     "dj_rest_auth",
     "dj_rest_auth.registration",
     "corsheaders",
-    'django_celery_beat',
+    "django_celery_beat",
 ]
 
 REST_FRAMEWORK = {
@@ -68,10 +72,8 @@ REST_FRAMEWORK = {
         "rest_framework.permissions.IsAuthenticated",
     ],
     "EXCEPTION_HANDLER": "authentication.exceptions.custom_exception_handler",
-    'DEFAULT_PAGINATION_CLASS': (
-        'posts.pagination.StandardCursorPagination'
-    ),
-    'PAGE_SIZE': 20,
+    "DEFAULT_PAGINATION_CLASS": ("posts.pagination.StandardCursorPagination"),
+    "PAGE_SIZE": 20,
 }
 
 REST_AUTH = {
@@ -118,21 +120,21 @@ SOCIALACCOUNT_PROVIDERS = {
 
 CELERY_BROKER_URL = env("REDIS_URL")
 CELERY_RESULT_BACKEND = env("REDIS_URL")
-CELERY_TIMEZONE = 'UTC'
-CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
+CELERY_TIMEZONE = "UTC"
+CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
 
 CELERY_BEAT_SCHEDULE = {
-    'mark-expired-invites': {
-        'task': 'workspaces.tasks.expire_invitation_task',
-        'schedule': 3600.0,
+    "mark-expired-invites": {
+        "task": "workspaces.tasks.expire_invitation_task",
+        "schedule": 3600.0,
     },
-    'publish-scheduled-posts': {
-        'task': 'posts.tasks.publish_scheduled_post',
-        'schedule': 60,
+    "publish-scheduled-posts": {
+        "task": "posts.tasks.publish_scheduled_post",
+        "schedule": 60,
     },
-    'cleanup-cloudinary-media': {
-        'task': 'medias.tasks.cleanup_cloudinary_media',
-        'schedule': 86400,
+    "cleanup-cloudinary-media": {
+        "task": "medias.tasks.cleanup_cloudinary_media",
+        "schedule": 86400,
     },
 }
 
@@ -146,12 +148,12 @@ CACHES = {
             # "CONNECTION_POOL_KWARGS": {
             #     "ssl_cert_reqs": None
             # },
-        }
+        },
     }
 }
 
-FACEBOOK_APP_ID="957260226693711"
-FACEBOOK_APP_SECRET= "90879b9e8d7e2ca905388e02d8e310e1"
+FACEBOOK_APP_ID = "957260226693711"
+FACEBOOK_APP_SECRET = "90879b9e8d7e2ca905388e02d8e310e1"
 
 # Allauth Settings
 ACCOUNT_UNIQUE_EMAIL = True
@@ -194,15 +196,15 @@ TEMPLATES = [
     },
 ]
 
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 # EMAIL_HOST = 'sandbox.smtp.mailtrap.io'
-EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_HOST = "smtp.gmail.com"
 EMAIL_USE_TLS = True
 EMAIL_PORT = 587
-EMAIL_TIMEOUT = 30   # seconds
-EMAIL_HOST_USER = env('EMAIL_HOST_USER')      # your gmail
-EMAIL_HOST_PASSWORD = env('EMAIL_HOST_PASSWORD')  # gmail app password
-DEFAULT_FROM_EMAIL = env('EMAIL_HOST_USER')
+EMAIL_TIMEOUT = 30  # seconds
+EMAIL_HOST_USER = env("EMAIL_HOST_USER")  # your gmail
+EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD")  # gmail app password
+DEFAULT_FROM_EMAIL = env("EMAIL_HOST_USER")
 
 WSGI_APPLICATION = "core.wsgi.application"
 
@@ -221,9 +223,7 @@ WSGI_APPLICATION = "core.wsgi.application"
 #     }
 # }
 
-DATABASES = {
-    'default': env.db('DATABASE_URL')
-}
+DATABASES = {"default": env.db("DATABASE_URL")}
 
 
 # Password validation
@@ -260,16 +260,16 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/4.2/howto/static-files/
 
-STATIC_URL = '/static/'
-STATIC_ROOT = BASE_DIR / 'staticfiles'
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+STATIC_URL = "/static/"
+STATIC_ROOT = BASE_DIR / "staticfiles"
+STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-FRONTEND_BASE_URL = env('FRONTEND_BASE_URL', default='http://localhost:5173')
+FRONTEND_BASE_URL = env("FRONTEND_BASE_URL", default="http://localhost:5173")
 
 LOGGING = {
     "version": 1,
@@ -285,16 +285,28 @@ LOGGING = {
     },
 }
 
-CLOUDINARY_API_KEY = env('CLOUDINARY_API_KEY')
-CLOUDINARY_API_SECRET = env('CLOUDINARY_API_SECRET')
-CLOUDINARY_CLOUD_NAME = env('CLOUDINARY_CLOUD_NAME')
+CLOUDINARY_API_KEY = env("CLOUDINARY_API_KEY")
+CLOUDINARY_API_SECRET = env("CLOUDINARY_API_SECRET")
+CLOUDINARY_CLOUD_NAME = env("CLOUDINARY_CLOUD_NAME")
 
 
 cloudinary.config(
     cloud_name=CLOUDINARY_CLOUD_NAME,
     api_key=CLOUDINARY_API_KEY,
     api_secret=CLOUDINARY_API_SECRET,
-    secure=True
+    secure=True,
 )
 
 IMAGE_CLEAN_UP_INTERVAL = 24
+
+service_account_path = env("FIREBASE_SERVICE_ACCOUNT_PATH", default=None)
+service_account_json = env("FIREBASE_SERVICE_ACCOUNT_JSON", default=None)
+
+if service_account_path and os.path.exists(service_account_path):
+    cred = credentials.Certificate(service_account_path)
+elif service_account_json:
+    cred = credentials.Certificate(json.loads(service_account_json))
+else:
+    raise ValueError("Firebase credentials not configured")
+
+firebase_admin.initialize_app(cred)

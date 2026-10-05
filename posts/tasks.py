@@ -4,6 +4,10 @@ from .post_handlers import post_handler
 from .models import Post
 from datetime import datetime, timezone
 from channels.oauth_handlers import oauth_handler
+from notifications.tasks import send_notification
+from notifications.models import Notification, UserNotification
+from django.conf import settings
+from workspaces.models import WorkspaceMember
 
 
 @shared_task
@@ -95,40 +99,70 @@ def post_to_each_channel(self, channel_post_id, post_id):
 
 @shared_task
 def mark_post_status(post_id):
-    post = Post.objects.prefetch_related("channel_posts").filter(id=post_id).first()
+    post = Post.objects.prefetch_related("channel_posts").select_related('workspace').filter(id=post_id).first()
     channel_posts = post.channel_posts.all()
     channel_posts_list = list(channel_posts)
 
+    workspace = post.workspace
+
+    status_found = False
+    
+    is_pending = is_some_failed = is_some_process_failed = is_all_failed = is_all_process_failed = False
+
     is_pending = channel_posts.filter(status="pending").exists()
+    status_found = is_pending
+
 
     failed_post = [cp for cp in channel_posts if cp.status == "failed"]
 
     process_failed_post = [cp for cp in channel_posts if cp.status == "process_failed"]
+    
+    if not status_found:
+        is_some_failed = len(failed_post) > 0 and len(failed_post) != len(
+            channel_posts_list
+        )
+        status_found = is_some_failed
+    
+    if not status_found:
+        is_some_process_failed = len(process_failed_post) > 0 and len(
+            process_failed_post
+        ) != len(channel_posts_list)
+        status_found = is_some_process_failed
 
-    is_some_failed = len(failed_post) > 0 and len(failed_post) != len(
-        channel_posts_list
-    )
-    is_some_process_failed = len(process_failed_post) > 0 and len(
-        process_failed_post
-    ) != len(channel_posts_list)
+    if not status_found:
+        is_all_failed = len(failed_post) > 0 and len(failed_post) == len(channel_posts_list)
+        status_found = is_all_failed
 
-    is_all_failed = len(failed_post) > 0 and len(failed_post) == len(channel_posts_list)
+    if not status_found:
+        is_all_process_failed = len(process_failed_post) > 0 and len(
+            process_failed_post
+        ) == len(channel_posts_list)
+        status_found = is_all_process_failed
 
-    is_all_process_failed = len(process_failed_post) > 0 and len(
-        process_failed_post
-    ) == len(channel_posts_list)
+    message = ''
+    title = ''
 
     if is_pending:
         post.status = "pending"
+        
 
     if is_some_failed or is_some_process_failed:
         post.status = "partial"
+        message = 'Post published but failed to publish to some channels'
+        title = 'Post Published'
+        
 
     if is_all_failed:
         post.status = "failed"
+        message = 'Post failed to publish'
+        title = 'Post Failed'
+        
 
     if is_all_process_failed:
         post.status = "process_failed"
+        message = 'Post failed to publish'
+        title = 'Post Failed'
+        
 
     if not (
         is_pending
@@ -139,8 +173,20 @@ def mark_post_status(post_id):
     ):
         post.status = "published"
         post.published_at = datetime.now(timezone.utc)
-
+        message = "Post published successfully"
+        title = 'Post Published'
+        
     post.save()
+
+    # for push notification
+    if not is_pending:
+        frontend_url = settings.FRONTEND_BASE_URL
+
+        users = list(WorkspaceMember.objects.filter(workspace=workspace, is_active=True).values_list('user', flat=True))
+
+        notification = Notification.objects.create(title=title, body=message, redirect_url=f'{frontend_url}/{workspace.slug_url}/post/{post.id}/')
+
+        send_notification.delay(notification_type ='post_published', users=users, notification_id=notification.id)
 
 
 @shared_task
