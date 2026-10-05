@@ -132,7 +132,7 @@ CELERY_BEAT_SCHEDULE = {
     },
     'cleanup-cloudinary-media': {
         'task': 'medias.tasks.cleanup_cloudinary_media',
-        'schedule': 10,
+        'schedule': 86400,
     },
 }
 
@@ -297,4 +297,4 @@ cloudinary.config(
     secure=True
 )
 
-IMAGE_CLEAN_UP_INTERVAL = 8
+IMAGE_CLEAN_UP_INTERVAL = 24
