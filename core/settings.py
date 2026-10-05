@@ -1,6 +1,7 @@
 import environ
 from pathlib import Path
 from datetime import timedelta
+import cloudinary
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -128,6 +129,10 @@ CELERY_BEAT_SCHEDULE = {
     'publish-scheduled-posts': {
         'task': 'posts.tasks.publish_scheduled_post',
         'schedule': 60,
+    },
+    'cleanup-cloudinary-media': {
+        'task': 'medias.tasks.cleanup_cloudinary_media',
+        'schedule': 86400,
     },
 }
 
@@ -279,3 +284,17 @@ LOGGING = {
         "level": "INFO",
     },
 }
+
+CLOUDINARY_API_KEY = env('CLOUDINARY_API_KEY')
+CLOUDINARY_API_SECRET = env('CLOUDINARY_API_SECRET')
+CLOUDINARY_CLOUD_NAME = env('CLOUDINARY_CLOUD_NAME')
+
+
+cloudinary.config(
+    cloud_name=CLOUDINARY_CLOUD_NAME,
+    api_key=CLOUDINARY_API_KEY,
+    api_secret=CLOUDINARY_API_SECRET,
+    secure=True
+)
+
+IMAGE_CLEAN_UP_INTERVAL = 24
