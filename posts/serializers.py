@@ -81,7 +81,30 @@ class PostSerializer(serializers.ModelSerializer):
 
         post = Post.objects.create(**validated_data, workspace=workspace)
 
-        instance = [PostMedia(**media, post=post) for media in post_media]
+        media_instances = []
+        for media in post_media:
+            media_url = media.pop("media_url", None)
+            media_type = media.pop("media_type", None)
+            public_id = media.pop("public_id", None)
+            order = media.pop("order", len(post_media) - 1)
+
+            if not media_url:
+                raise serializers.ValidationError("Media url field is required")
+
+            if not media_type:
+                raise serializers.ValidationError("Media type field is required")
+
+            if not public_id:
+                raise serializers.ValidationError("Public Id field is required")
+
+            instance = PostMedia(
+                media_url=media_url,
+                media_type=media_type,
+                public_id=public_id,
+                order=order,
+                post=post,
+            )
+            media_instances.append(instance)
 
         PostMedia.objects.bulk_create(instance)
 
@@ -119,6 +142,7 @@ class PostSerializer(serializers.ModelSerializer):
                 else:
                     media_url = item.pop("media_url", None)
                     media_type = item.pop("media_type", None)
+                    public_id = item.pop("public_id", None)
 
                     if not media_url:
                         raise serializers.ValidationError("Media url is required")
@@ -126,9 +150,13 @@ class PostSerializer(serializers.ModelSerializer):
                     if not media_type:
                         raise serializers.ValidationError("Media type is required")
 
+                    if not public_id:
+                        raise serializers.ValidationError("Public Id field is required")
+
                     create_media_instance = PostMedia(
                         media_url=media_url,
                         media_type=media_type,
+                        public_id=public_id,
                         order=post_media_order,
                         is_active=True,
                         post=instance,
@@ -136,7 +164,9 @@ class PostSerializer(serializers.ModelSerializer):
                     objects_to_create.append(create_media_instance)
 
         if delete_medias and len(delete_medias) > 0:
-            delete_instances = PostMedia.objects.filter(id__in=delete_medias, is_active=True)
+            delete_instances = PostMedia.objects.filter(
+                id__in=delete_medias, is_active=True
+            )
 
             for delete_instance in delete_instances:
                 delete_instance.is_active = False
@@ -229,7 +259,7 @@ class PostPublishSerializer(serializers.ModelSerializer):
         if post_status == "my_time":
             next_slot = get_next_time_slot(workspace_id=workspace_id, user=user)
             if not next_slot:
-                raise serializers.ValidationError('No time slots available')
+                raise serializers.ValidationError("No time slots available")
             instance.status = "scheduled"
             instance.schedule_date_time = next_slot
 
