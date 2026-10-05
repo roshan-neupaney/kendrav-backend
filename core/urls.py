@@ -28,4 +28,5 @@ urlpatterns = [
     path("api/v1/channel/", include("channels.urls")),
     path("api/v1/workspace/<int:workspace_id>/post/", include("posts.urls")),
     path("api/v1/media/presigned-url/", include("medias.urls")),
+    path("api/v1/notification/", include("notifications.urls")),
 ]
