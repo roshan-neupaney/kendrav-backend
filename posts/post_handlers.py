@@ -18,7 +18,7 @@ class FacebookHandler:
         if access_token:
             payload["access_token"] = access_token
 
-        post_medias = PostMedia.objects.filter(post=post.id).order_by("order")
+        post_medias = PostMedia.objects.filter(post=post.id, is_active=True).order_by("order")
 
         post_medias_list = list(post_medias.all())
 

@@ -82,8 +82,13 @@ class UserNotificationReadAllView(APIView):
 
 class RegisterFCMToken(APIView):
     def post(self, request):
+        device_id = request.headers.get('deviceId')
+        data = request.data
+
+        data['device_id'] = device_id
+
         serializer = RegisterFCMTokenSerializer(
-            data=request.data, context={"user": request.user}
+            data=data, context={'user': request.user}
         )
 
         if serializer.is_valid(raise_exception=True):

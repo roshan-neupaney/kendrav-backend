@@ -15,9 +15,9 @@ def send_notification(notification_type, users, notification_id):
 
     notification = Notification.objects.filter(id=notification_id).first()
 
-    fcm_tokens = UserFcmToken.objects.filter(
+    fcm_tokens = list(UserFcmToken.objects.filter(
         user__in=preferred_users, is_active=True
-    ).values_list("fcm_token", flat=True)
+    ).values_list("fcm_token", flat=True))
 
     if not len(fcm_tokens) > 0:
         return

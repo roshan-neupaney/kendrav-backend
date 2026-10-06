@@ -2,6 +2,9 @@ from rest_framework import serializers
 from .models import UserNotification, Notification
 from users.models import UserFcmToken
 from workspaces.models import Workspace
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
 
 
 class NotificationSerializer(serializers.ModelSerializer):
@@ -36,12 +39,15 @@ class RegisterFCMTokenSerializer(serializers.ModelSerializer):
     class Meta:
         model=UserFcmToken
         fields='__all__'
+        extra_kwargs = {
+            "user": {'required': False}
+        }
     
     def create(self, validated_data):
-        user = self.context.get('user')
+        user = self.context['user']
 
         fcm_token = validated_data.pop('fcm_token')
-        device_id = validated_data.pop('device_id')
+        device_id = validated_data.get('device_id')
 
         UserFcmToken.objects.filter(user=user, device_id=device_id, is_active=True).delete()
 
