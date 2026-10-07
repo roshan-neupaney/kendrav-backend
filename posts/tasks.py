@@ -4,7 +4,7 @@ from .post_handlers import post_handler
 from .models import Post
 from datetime import datetime, timezone
 from channels.oauth_handlers import oauth_handler
-from notifications.tasks import send_notification
+from notifications.tasks import send_notification_by_topic
 from notifications.models import Notification, UserNotification
 from django.conf import settings
 from workspaces.models import WorkspaceMember
@@ -186,7 +186,7 @@ def mark_post_status(post_id):
 
         notification = Notification.objects.create(title=title, body=message, redirect_url=f'{frontend_url}/{workspace.slug_url}/post/{post.id}/')
 
-        send_notification.delay(notification_type ='post_published', users=users, notification_id=notification.id)
+        send_notification_by_topic.delay(topic=f'{workspace.slug_url}_post_published', notification_id=notification.id)
 
 
 @shared_task
