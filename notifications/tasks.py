@@ -9,13 +9,14 @@ logger = logging.getLogger(__name__)
 
 @shared_task
 def send_notification_by_topic(topic, notification_id):
+    print(topic)
     notification = Notification.objects.filter(id=notification_id).first()
     
     if not notification:
         return
     
     try:
-        messaging.send(
+        resp = messaging.send(
             messaging.Message(
                 topic=topic,
                 notification=messaging.Notification(
@@ -24,6 +25,7 @@ def send_notification_by_topic(topic, notification_id):
                 ),
             )
         )
+        print('resp', resp)
     except Exception as e:
         logger.error(f"Failed to send notification to topic {topic}: {e}")
 
@@ -39,6 +41,7 @@ def subscribe_to_topic(workspace_slug, user, fcm_token):
     )
     for topic in user_preferred_topics:
         workspace_topic = f"{workspace_slug}_{topic}"
+        print(workspace_topic)
         messaging.subscribe_to_topic([fcm_token], workspace_topic)
 
 

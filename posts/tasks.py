@@ -77,6 +77,7 @@ def post_to_each_channel(self, channel_post_id, post_id):
         mark_post_status.delay(post_id=post_id)
         return
 
+    print(channel_post)
     try:
         handler.post_to_channel(
             channel_post=channel_post,
