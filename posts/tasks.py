@@ -77,7 +77,6 @@ def post_to_each_channel(self, channel_post_id, post_id):
         mark_post_status.delay(post_id=post_id)
         return
 
-    print(channel_post)
     try:
         handler.post_to_channel(
             channel_post=channel_post,
@@ -182,8 +181,6 @@ def mark_post_status(post_id):
     # for push notification
     if not is_pending:
         frontend_url = settings.FRONTEND_BASE_URL
-
-        users = list(WorkspaceMember.objects.filter(workspace=workspace, is_active=True).values_list('user', flat=True))
 
         notification = Notification.objects.create(title=title, body=message, redirect_url=f'{frontend_url}/{workspace.slug_url}/post/{post.id}/')
 

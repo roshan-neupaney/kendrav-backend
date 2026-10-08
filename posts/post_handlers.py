@@ -58,8 +58,6 @@ class FacebookHandler:
                 if media_upload_fail:
                     raise Exception(f"Failed to upload image: {error}")
         
-        print(media_res_ids)
-
         if post.caption:
             payload["message"] = post.caption
         if post.link:

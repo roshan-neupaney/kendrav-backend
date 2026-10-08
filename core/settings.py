@@ -31,17 +31,17 @@ CORS_ALLOWED_ORIGINS = env.list(
 )
 
 CORS_ALLOW_HEADERS = [
-    'accept',
-    'accept-encoding',
-    'authorization',
-    'content-type',
-    'dnt',
-    'origin',
-    'user-agent',
-    'x-csrftoken',
-    'x-requested-with',
-    'deviceid',
-    'workspaceid',
+    "accept",
+    "accept-encoding",
+    "authorization",
+    "content-type",
+    "dnt",
+    "origin",
+    "user-agent",
+    "x-csrftoken",
+    "x-requested-with",
+    "deviceid",
+    "workspaceid",
 ]
 
 CORS_ALLOW_CREDENTIALS = True
@@ -149,6 +149,10 @@ CELERY_BEAT_SCHEDULE = {
     "cleanup-cloudinary-media": {
         "task": "medias.tasks.cleanup_cloudinary_media",
         "schedule": 86400,
+    },
+    "unsubscribe-inactive-tokens-from-topics": {
+        "task": "notifications.tasks.unsubscribe_inactive_tokens_from_topics",
+        "schedule": 60 * 60 * 24 * 7,
     },
 }
 

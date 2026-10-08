@@ -65,7 +65,7 @@ def create_user_profile(sender, instance, created, **kwargs):
             NotificationPreference(
                 user=instance, notification_type=key, is_permitted=value
             )
-            for key, value in notification_types
+            for key, value in notification_types.items()
         ]
 
         NotificationPreference.objects.bulk_create(notification_preference_instances)
