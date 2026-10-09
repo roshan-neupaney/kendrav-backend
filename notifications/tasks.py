@@ -6,6 +6,9 @@ from workspaces.models import Workspace
 import logging
 from datetime import datetime, timedelta, timezone
 from django.db.models import Q
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
 
 logger = logging.getLogger(__name__)
 
@@ -79,7 +82,6 @@ def unsubscribe_from_all_topic(workspace_slug, fcm_tokens):
             logger.error(f"Failed to unsubscribe from {workspace_topic}: {e}")
 
 
-
 @shared_task
 def unsubscribe_inactive_tokens_from_topics():
     cutoff = datetime.now(timezone.utc) - timedelta(days=30)
@@ -105,3 +107,48 @@ def unsubscribe_inactive_tokens_from_topics():
             )
 
         user_fcm_token.delete()
+
+
+def subscribe_to_topic(fcm_tokens, topic):
+    result = messaging.subscribe_to_topic(fcm_tokens, topic)
+    if result.failure_count > 0:
+        for error in result.errors:
+            logger.error(f"Failed to subscribe {result.failure_count} token{'s' if result.failure_count > 1 else ''}: {error.reason}")
+
+
+def unsubscribe_to_topic(fcm_tokens, topic):
+    try:
+        messaging.unsubscribe_from_topic(fcm_tokens, topic)
+    except Exception as e:
+        logger.error(f"Failed to unsubscribe from {topic}: {e}")
+
+
+@shared_task
+def toggle_topic_subscription(user_id, type):
+    user = User.objects.prefetch_related(
+        "user_workspaces", "notification_preferences", "fcm_tokens"
+    ).filter(id=user_id).first()
+
+    preferred_notification = user.notification_preferences.filter(
+        notification_type=type
+    ).first()
+
+    user_workspaces = list(user.user_workspaces.all())
+
+    workspace_slugs = [uw.workspace.slug_url for uw in user_workspaces]
+
+    user_fcm_tokens = list(user.fcm_tokens.filter(is_active=True).values_list("fcm_token", flat=True))
+
+    if not len(user_fcm_tokens) > 0:
+        return
+
+    for slug in workspace_slugs:
+        topic = f"{slug}_{preferred_notification.notification_type}"
+        if preferred_notification.is_permitted:
+            unsubscribe_to_topic(fcm_tokens=user_fcm_tokens, topic=topic)
+            preferred_notification.is_permitted = False
+        else:
+            subscribe_to_topic(fcm_tokens=user_fcm_tokens, topic=topic)
+            preferred_notification.is_permitted = True
+        
+    preferred_notification.save()

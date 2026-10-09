@@ -5,6 +5,7 @@ from .models import UserNotification
 from posts.pagination import StandardCursorPagination
 from .serializers import UserNotificationSerializer, RegisterFCMTokenSerializer
 from users.models import UserFcmToken
+from .tasks import toggle_topic_subscription
 
 
 class UserNotificationView(APIView):
@@ -82,13 +83,13 @@ class UserNotificationReadAllView(APIView):
 
 class RegisterFCMToken(APIView):
     def post(self, request):
-        device_id = request.headers.get('deviceId')
+        device_id = request.headers.get("deviceId")
         data = request.data
 
-        data['device_id'] = device_id
+        data["device_id"] = device_id
 
         serializer = RegisterFCMTokenSerializer(
-            data=data, context={'user': request.user}
+            data=data, context={"user": request.user}
         )
 
         if serializer.is_valid(raise_exception=True):
@@ -118,10 +119,34 @@ class UnRegisterFCMToken(APIView):
         user = request.user
 
         UserFcmToken.objects.filter(user=user, device_id=device_id).delete()
-        
+
         return Response(
             {
-                "message": 'Device unregistered successfully',
+                "message": "Device unregistered successfully",
+                "status": status.HTTP_200_OK,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+
+class ToggleTokenSubscriptionToTopicView(APIView):
+    def post(self, request):
+        type = request.data.get("type", None)
+
+        if not type:
+            return Response(
+                {
+                    "message": ["Type is required"],
+                    "status": status.HTTP_400_BAD_REQUEST,
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        toggle_topic_subscription.delay(user_id=request.user.id, type=type)
+
+        return Response(
+            {
+                "message": "Success",
                 "status": status.HTTP_200_OK,
             },
             status=status.HTTP_200_OK,

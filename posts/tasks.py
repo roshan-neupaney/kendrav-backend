@@ -5,9 +5,9 @@ from .models import Post
 from datetime import datetime, timezone
 from channels.oauth_handlers import oauth_handler
 from notifications.tasks import send_notification_by_topic
-from notifications.models import Notification, UserNotification
+from notifications.models import Notification
 from django.conf import settings
-from workspaces.models import WorkspaceMember
+from django.core.cache import cache
 
 
 @shared_task
@@ -71,7 +71,6 @@ def post_to_each_channel(self, channel_post_id, post_id):
         channel_post.status = "failed"
         channel_post.error_message = "Channel is disconnected"
         channel_post.save()
-
         workspace_channel.is_active = False
         workspace_channel.save()
         mark_post_status.delay(post_id=post_id)
@@ -180,6 +179,10 @@ def mark_post_status(post_id):
 
     # for push notification
     if not is_pending:
+        count = cache.get('count', 0)
+        print(count)
+        cache.set('count', count+1)
+        
         frontend_url = settings.FRONTEND_BASE_URL
 
         notification = Notification.objects.create(title=title, body=message, redirect_url=f'{frontend_url}/{workspace.slug_url}/post/{post.id}/')
