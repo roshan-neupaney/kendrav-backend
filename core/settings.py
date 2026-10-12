@@ -328,3 +328,5 @@ else:
     raise ValueError("Firebase credentials not configured")
 
 firebase_admin.initialize_app(cred)
+
+KHALTI_URL=env('KHALTI_URL')

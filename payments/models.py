@@ -1,9 +1,8 @@
-from django.db import models
 from django.contrib.auth import get_user_model
+from django.db import models
 
 User = get_user_model()
 
-'COMPLETE | PENDING | FAILURE | FULL_REFUND | PARTIAL_REFUND | AMBIGUOUS | NOT_FOUND | CANCELED'
 StatusChoices = [
     ("COMPLETE", "COMPLETE"),
     ("PENDING", "PENDING"),
@@ -19,7 +18,7 @@ class PaymentMethod(models.Model):
     title = models.CharField(max_length=100)
     logo = models.CharField(max_length=300, blank=True, null=True)
     config = models.JSONField(default=dict, blank=True)
-    gateway_type = models.CharField(max_length=100, blank=True, null=True)
+    gateway_type = models.CharField(max_length=100, unique=True)
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

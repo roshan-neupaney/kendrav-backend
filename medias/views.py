@@ -1,10 +1,10 @@
+from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework import status
 from .serializers import SignedUploadCredentialsSerializer
-import cloudinary
 from django.conf import settings
 import time
-from rest_framework.response import Response
-from rest_framework import status
+import cloudinary
 
 
 class SignedUploadCredentialsView(APIView):
