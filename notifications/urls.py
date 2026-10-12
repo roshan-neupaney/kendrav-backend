@@ -5,6 +5,7 @@ from .views import (
     UserNotificationReadAllView,
     RegisterFCMToken,
     UnRegisterFCMToken,
+    ToggleTokenSubscriptionToTopicView
 )
 
 urlpatterns = [
@@ -24,5 +25,10 @@ urlpatterns = [
         "fcm-token/unregister/",
         UnRegisterFCMToken.as_view(),
         name="fcm-token-unregister",
+    ),
+    path(
+        "topic/toggle-subscription/",
+        ToggleTokenSubscriptionToTopicView.as_view(),
+        name="topic-toggle-subscription",
     ),
 ]

@@ -18,7 +18,7 @@ class FacebookHandler:
         if access_token:
             payload["access_token"] = access_token
 
-        post_medias = PostMedia.objects.filter(post=post.id).order_by("order")
+        post_medias = PostMedia.objects.filter(post=post.id, is_active=True).order_by("order")
 
         post_medias_list = list(post_medias.all())
 
@@ -57,7 +57,7 @@ class FacebookHandler:
 
                 if media_upload_fail:
                     raise Exception(f"Failed to upload image: {error}")
-
+        
         if post.caption:
             payload["message"] = post.caption
         if post.link:
