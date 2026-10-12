@@ -4,7 +4,6 @@ from users.models import UserFcmToken
 from workspaces.models import Workspace
 from django.contrib.auth import get_user_model
 from .tasks import subscribe_to_all_topic
-from firebase_admin import messaging
 
 User = get_user_model()
 
@@ -22,7 +21,6 @@ class NotificationSerializer(serializers.ModelSerializer):
         ]
 
 
-# In notifications/serializers.py — don't import from workspaces
 class WorkspaceSerializer(serializers.ModelSerializer):
     class Meta:
         model = Workspace

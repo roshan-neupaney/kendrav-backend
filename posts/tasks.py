@@ -140,6 +140,7 @@ def mark_post_status(post_id):
 
     message = ''
     title = ''
+    topic = ''
 
     if is_pending:
         post.status = "pending"
@@ -149,19 +150,21 @@ def mark_post_status(post_id):
         post.status = "partial"
         message = 'Post published but failed to publish to some channels'
         title = 'Post Published'
+        topic = 'post_published'
         
 
     if is_all_failed:
         post.status = "failed"
         message = 'Post failed to publish'
         title = 'Post Failed'
+        topic = 'post_failed'
         
 
     if is_all_process_failed:
         post.status = "process_failed"
         message = 'Post failed to publish'
         title = 'Post Failed'
-        
+        topic = 'post_failed'
 
     if not (
         is_pending
@@ -174,20 +177,18 @@ def mark_post_status(post_id):
         post.published_at = datetime.now(timezone.utc)
         message = "Post published successfully"
         title = 'Post Published'
+        topic = 'post_published'
         
     post.save()
 
     # for push notification
     if not is_pending:
-        count = cache.get('count', 0)
-        print(count)
-        cache.set('count', count+1)
         
         frontend_url = settings.FRONTEND_BASE_URL
 
         notification = Notification.objects.create(title=title, body=message, redirect_url=f'{frontend_url}/{workspace.slug_url}/post/{post.id}/')
 
-        send_notification_by_topic.delay(topic=f'{workspace.slug_url}_post_published', notification_id=notification.id)
+        send_notification_by_topic.delay(topic=f'{workspace.slug_url}_{topic}', notification_id=notification.id)
 
 
 @shared_task
