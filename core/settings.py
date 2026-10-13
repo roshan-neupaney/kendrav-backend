@@ -330,3 +330,4 @@ else:
 firebase_admin.initialize_app(cred)
 
 KHALTI_URL=env('KHALTI_URL')
+KHALTI_API_KEY=env('KHALTI_API_KEY')

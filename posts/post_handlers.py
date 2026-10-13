@@ -1,7 +1,9 @@
-import requests
-from posts.models import PostMedia
-from datetime import datetime, timezone
 import json
+from datetime import datetime, timezone
+
+import requests
+
+from posts.models import PostMedia
 
 
 def post_handler(slug_url):

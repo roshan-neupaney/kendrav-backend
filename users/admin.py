@@ -60,7 +60,7 @@ class UserSubscriptionAdmin(admin.ModelAdmin):
         "start_date",
         "end_date",
         "subscription",
-        "payment_history_id",
+        "payment_transaction_id",
         "is_active",
         "created_at",
         "updated_at",

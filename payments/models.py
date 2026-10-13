@@ -23,10 +23,10 @@ class PaymentMethod(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
-class PaymentHistory(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='user_payment_histories')
-    subscription = models.ForeignKey('subscriptions.Subscription', on_delete=models.SET_NULL, null=True, related_name='payment_histories')
-    payment_method = models.ForeignKey(PaymentMethod, on_delete=models.SET_NULL, null=True, related_name='payment_method_histories')
+class PaymentTransaction(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='user_payment_transactions')
+    subscription = models.ForeignKey('subscriptions.Subscription', on_delete=models.SET_NULL, null=True, related_name='payment_transactions')
+    payment_method = models.ForeignKey(PaymentMethod, on_delete=models.SET_NULL, null=True, related_name='payment_method_transactions')
     total_amount = models.DecimalField(max_digits=10, decimal_places=2)
     transaction_uuid = models.CharField(max_length=100, blank=True, unique=True, null=True)
     gateway_response = models.JSONField(default=dict, blank=True)

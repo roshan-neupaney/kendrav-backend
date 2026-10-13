@@ -81,7 +81,7 @@ class UserSubscription(models.Model):
     start_date = models.DateTimeField(auto_now_add=True)
     end_date = models.DateTimeField(blank=True, null=True)
     subscription = models.ForeignKey('subscriptions.Subscription', on_delete=models.CASCADE, related_name="subscribed_users")
-    payment_history = models.ForeignKey('payments.PaymentHistory', on_delete=models.SET_NULL, blank=True, null=True, related_name="subscriptions_histories")
+    payment_transaction = models.ForeignKey('payments.PaymentTransaction', on_delete=models.SET_NULL, blank=True, null=True, related_name="subscriptions_histories")
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
