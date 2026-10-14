@@ -154,6 +154,10 @@ CELERY_BEAT_SCHEDULE = {
         "task": "notifications.tasks.unsubscribe_inactive_tokens_from_topics",
         "schedule": 60 * 60 * 24 * 7,
     },
+    "mark-expired-payment-transaction": {
+        "task": "payments.tasks.mark_expired_payment_transaction",
+        "schedule": 60 * 10,
+    },
 }
 
 CACHES = {
@@ -331,3 +335,5 @@ firebase_admin.initialize_app(cred)
 
 KHALTI_URL=env('KHALTI_URL')
 KHALTI_API_KEY=env('KHALTI_API_KEY')
+
+TRANSACTION_VALIDITY_PERIOD=75

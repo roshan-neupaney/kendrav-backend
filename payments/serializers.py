@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from .models import PaymentTransaction
 
 
 class PaymentInitializeSerializer(serializers.Serializer):
@@ -7,4 +8,9 @@ class PaymentInitializeSerializer(serializers.Serializer):
     redirect_url = serializers.CharField(write_only=True)
     website_url = serializers.CharField(write_only=True)
     transaction_uuid = serializers.CharField()
+
+class PaymentTransactionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model=PaymentTransaction
+        fields="__all__"
     

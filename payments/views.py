@@ -3,9 +3,9 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .models import PaymentMethod
+from .models import PaymentMethod, PaymentTransaction
 from .payment_handler import payment_handler
-from .serializers import PaymentInitializeSerializer
+from .serializers import PaymentInitializeSerializer, PaymentTransactionSerializer
 
 
 class PaymentInitializeView(APIView):
@@ -19,6 +19,26 @@ class PaymentInitializeView(APIView):
             idempotency_key = cache.get(f"idempotency_{transaction_uuid}", False)
 
             if idempotency_key:
+                return Response(
+                    {
+                        "status": status.HTTP_400_BAD_REQUEST,
+                        "message": "Duplicate request",
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+                return Response(
+                    {
+                        "status": status.HTTP_400_BAD_REQUEST,
+                        "message": "Duplicate request",
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            payment_transaction = PaymentTransaction.objects.filter(
+                transaction_uuid=transaction_uuid
+            ).exists()
+
+            if payment_transaction:
                 return Response(
                     {
                         "status": status.HTTP_400_BAD_REQUEST,
@@ -47,7 +67,10 @@ class PaymentInitializeView(APIView):
 
             if not result:
                 return Response(
-                    {"message": "Payment initiation failed", "status": 500},
+                    {
+                        "message": "Payment initiation failed",
+                        "status": status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    },
                     status=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 )
 
@@ -64,5 +87,56 @@ class PaymentInitializeView(APIView):
             {
                 "message": serializer.error_messages,
                 "status": status.HTTP_400_BAD_REQUEST,
+            }
+        )
+
+
+class PaymentVerificationView(APIView):
+    def post(self, request):
+        pidx = request.data.get("pidx", None)
+
+        if not pidx:
+            return Response(
+                {"message": "pidx is required", "status": status.HTTP_400_BAD_REQUEST},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        payment_transaction = (
+            PaymentTransaction.objects.select_related("payment_method")
+            .filter(payment_idx=pidx)
+            .first()
+        )
+
+        if not payment_transaction:
+            return Response(
+                {
+                    "message": "Transaction not found",
+                    "status": status.HTTP_400_BAD_REQUEST,
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if payment_transaction.status == "EXPIRED":
+            return Response(
+                {
+                    "message": "Transaction expired",
+                    "status": status.HTTP_400_BAD_REQUEST,
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        handler = payment_handler(payment_transaction.payment_method.gateway_type)
+
+        result = handler.verify_payment(pidx=pidx)
+
+        serializer = PaymentTransactionSerializer(result.get("data"))
+
+        return Response(
+            {
+                "message": result.get("message", ""),
+                "status": status.HTTP_200_OK
+                if result.get("status", False)
+                else status.HTTP_500_INTERNAL_SERVER_ERROR,
+                "data": serializer.data,
             }
         )

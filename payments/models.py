@@ -4,14 +4,15 @@ from django.db import models
 User = get_user_model()
 
 StatusChoices = [
-    ("COMPLETE", "COMPLETE"),
+    ("COMPLETED", "COMPLETED"),
     ("PENDING", "PENDING"),
     ("FAILURE", "FAILURE"),
-    ("FULL_REFUND", "FULL_REFUND"),
-    ("PARTIAL_REFUND", "PARTIAL_REFUND"),
+    ("FULL_REFUNDED", "FULL_REFUNDED"),
+    ("PARTIAL_REFUNDED", "PARTIAL_REFUNDED"),
     ("AMBIGUOUS", "AMBIGUOUS"),
     ("NOT_FOUND", "NOT_FOUND"),
     ("CANCELED", "CANCELED"),
+    ("EXPIRED", "EXPIRED"),
 ]
 
 class PaymentMethod(models.Model):
