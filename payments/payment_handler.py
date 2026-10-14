@@ -1,9 +1,14 @@
+import logging
+
 import requests
 from django.conf import settings
 from django.contrib.auth import get_user_model
 
-from .models import PaymentMethod, PaymentTransaction
 from subscriptions.models import Subscription
+
+from .models import PaymentMethod, PaymentTransaction
+
+logger = logging.getLogger(__name__)
 
 User = get_user_model()
 
@@ -22,12 +27,12 @@ class KhaltiHandler:
         user = User.objects.filter(id=user_id).first()
 
         total_amount = subscription.price
-        amount = total_amount * 10
+        amount = int(total_amount * 100)
         transaction_uuid = payload.get("transaction_uuid")
         data = {
             "return_url": payload.get("redirect_url"),
             "website_url": payload.get("website_url"),
-            "amount": int(amount),
+            "amount": amount,
             "purchase_order_id": transaction_uuid,
             "purchase_order_name": subscription.plan_name,
         }
@@ -36,22 +41,26 @@ class KhaltiHandler:
         "Authorization": f"Key {settings.KHALTI_API_KEY}",
         "Content-Type": "application/json"
     }
-        response = requests.post(self.request_url, json=data, headers=headers)
+        try:
+            response = requests.post(self.request_url, json=data, headers=headers)
 
-        if response.ok:
-            res_json = response.json()
-            if res_json.get("pidx", None):
-                PaymentTransaction.objects.create(
-                    user=user,
-                    subscription=subscription,
-                    payment_method=payment_method,
-                    total_amount=total_amount,
-                    transaction_uuid=transaction_uuid,
-                )
+            if response.ok:
+                res_json = response.json()
+                pidx = res_json.get("pidx", None)
+                if pidx:
+                    PaymentTransaction.objects.create(
+                        user=user,
+                        subscription=subscription,
+                        payment_method=payment_method,
+                        total_amount=total_amount,
+                        transaction_uuid=transaction_uuid,
+                        payment_idx=pidx
+                    )
 
-                return {
-                    "idx": res_json.get("pidx"),
-                    "payment_url": res_json.get("payment_url"),
-                }
-
-        print(response.json())
+                    return {
+                        "idx": pidx,
+                        "payment_url": res_json.get("payment_url"),
+                    }
+        except Exception as e:
+            logger.error(f'Failed to initiate payment {e}')
+            return None

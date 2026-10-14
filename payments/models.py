@@ -28,6 +28,7 @@ class PaymentTransaction(models.Model):
     subscription = models.ForeignKey('subscriptions.Subscription', on_delete=models.SET_NULL, null=True, related_name='payment_transactions')
     payment_method = models.ForeignKey(PaymentMethod, on_delete=models.SET_NULL, null=True, related_name='payment_method_transactions')
     total_amount = models.DecimalField(max_digits=10, decimal_places=2)
+    payment_idx = models.CharField(max_length=100, unique=True)
     transaction_uuid = models.CharField(max_length=100, blank=True, unique=True, null=True)
     gateway_response = models.JSONField(default=dict, blank=True)
     status = models.CharField(max_length=50, default='PENDING', choices=StatusChoices)
