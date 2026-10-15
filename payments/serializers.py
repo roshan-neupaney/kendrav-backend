@@ -3,6 +3,8 @@ from .models import PaymentTransaction
 
 
 class PaymentInitializeSerializer(serializers.Serializer):
+    duration_days = serializers.IntegerField(write_only=True)
+    price = serializers.DecimalField(10, 2)
     payment_method_id = serializers.IntegerField(write_only=True)
     subscription_id = serializers.IntegerField(write_only=True)
     redirect_url = serializers.CharField(write_only=True)
