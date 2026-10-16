@@ -25,12 +25,12 @@ def payment_handler(type):
 class KhaltiHandler:
     base_url = settings.KHALTI_URL
 
-    def initiate_payment(self, payload, subscription_id, user_id, payment_method_id):
-        subscription = Subscription.objects.filter(id=subscription_id).first()
-        payment_method = PaymentMethod.objects.filter(id=payment_method_id).first()
-        user = User.objects.filter(id=user_id).first()
-
-        total_amount = subscription.price
+    def initiate_payment(
+        self,
+        payload,
+    ):
+        
+        total_amount = payload.get('total_amount')
         amount = int(total_amount * 100)
         transaction_uuid = payload.get("transaction_uuid")
         data = {
@@ -38,7 +38,7 @@ class KhaltiHandler:
             "website_url": payload.get("website_url"),
             "amount": amount,
             "purchase_order_id": transaction_uuid,
-            "purchase_order_name": subscription.plan_name,
+            "purchase_order_name": payload.get("purchase_order_name"),
         }
 
         headers = {
@@ -54,17 +54,8 @@ class KhaltiHandler:
                 res_json = response.json()
                 pidx = res_json.get("pidx", None)
                 if pidx:
-                    PaymentTransaction.objects.create(
-                        user=user,
-                        subscription=subscription,
-                        payment_method=payment_method,
-                        total_amount=total_amount,
-                        transaction_uuid=transaction_uuid,
-                        payment_idx=pidx,
-                    )
-
                     return {
-                        "idx": pidx,
+                        "payment_idx": pidx,
                         "payment_url": res_json.get("payment_url"),
                     }
         except Exception as e:
@@ -110,7 +101,9 @@ class KhaltiHandler:
                     subscription = Subscription.objects.filter(
                         id=payment_transaction.subscription
                     ).first()
-                    UserSubscription.objects.filter(user=user, is_active=True).update(is_active=False)
+                    UserSubscription.objects.filter(user=user, is_active=True).update(
+                        is_active=False
+                    )
 
                     start_date = datetime.now(timezone.utc)
                     end_date = datetime.now(timezone.utc) + timedelta(

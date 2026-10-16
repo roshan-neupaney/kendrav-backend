@@ -80,6 +80,7 @@ class UserSubscription(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="user_subscriptions")
     start_date = models.DateTimeField(auto_now_add=True)
     end_date = models.DateTimeField(blank=True, null=True)
+    channel_count = models.IntegerField()
     subscription = models.ForeignKey('subscriptions.Subscription', on_delete=models.CASCADE, related_name="subscribed_users")
     payment_transaction = models.ForeignKey('payments.PaymentTransaction', on_delete=models.SET_NULL, blank=True, null=True, related_name="subscriptions_histories")
     is_active = models.BooleanField(default=True)

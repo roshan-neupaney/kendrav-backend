@@ -6,7 +6,6 @@ class SubscriptionAdmin(admin.ModelAdmin):
     list_display = [
         "id",
         "plan_name",
-        "max_channels",
         "queue_limit",
         "allow_analytics",
         "allow_team",
@@ -21,8 +20,6 @@ class SubscriptionAdmin(admin.ModelAdmin):
         "ai_generative_ideas",
         "max_ai_generative_ideas",
         "max_workspaces",
-        "price",
-        "duration_days",
         "is_active",
         "created_at",
         "updated_at",

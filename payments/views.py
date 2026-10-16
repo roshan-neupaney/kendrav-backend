@@ -6,6 +6,7 @@ from rest_framework.views import APIView
 from .models import PaymentMethod, PaymentTransaction
 from .payment_handler import payment_handler
 from .serializers import PaymentInitializeSerializer, PaymentTransactionSerializer
+from subscriptions.models import Subscription
 
 
 class PaymentInitializeView(APIView):
@@ -14,6 +15,8 @@ class PaymentInitializeView(APIView):
 
         if serializer.is_valid(raise_exception=True):
             payment_method_id = serializer.validated_data.get("payment_method_id")
+            channel_count = serializer.validated_data.get("channel_count")
+            package_type = serializer.validated_data.get("package_type")
             subscription_id = serializer.validated_data.get("subscription_id")
             transaction_uuid = serializer.validated_data.get("transaction_uuid")
             idempotency_key = cache.get(f"idempotency_{transaction_uuid}", False)
@@ -47,12 +50,33 @@ class PaymentInitializeView(APIView):
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
+            subscription = (
+                Subscription.objects.prefetch_related("duration_packages")
+                .filter(id=subscription_id)
+                .first()
+            )
+            if not subscription:
+                return Response(
+                    {
+                        "status": status.HTTP_400_BAD_REQUEST,
+                        "message": "Duplicate request",
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            duration_package = subscription.duration_packages.filter(type=package_type).first()
+            print(duration_package)
+
             cache.set(f"idempotency_{transaction_uuid}", True, timeout=86400)
+            
+            total_amount = duration_package.price * channel_count
 
             payload = {
                 "redirect_url": serializer.validated_data.get("redirect_url"),
                 "website_url": serializer.validated_data.get("website_url"),
                 "transaction_uuid": transaction_uuid,
+                "total_amount": total_amount,
+                "purchase_order_name": subscription.plan_name,
             }
 
             payment_method = PaymentMethod.objects.filter(id=payment_method_id).first()
@@ -60,9 +84,6 @@ class PaymentInitializeView(APIView):
 
             result = handler.initiate_payment(
                 payload=payload,
-                subscription_id=subscription_id,
-                user_id=request.user.id,
-                payment_method_id=payment_method.id,
             )
 
             if not result:
@@ -73,6 +94,27 @@ class PaymentInitializeView(APIView):
                     },
                     status=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 )
+
+            payment_idx = result.get("payment_idx", None)
+
+            if not payment_idx:
+                return Response(
+                    {
+                        "message": "Payment initiation failed",
+                        "status": status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    },
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                )
+
+            PaymentTransaction.objects.create(
+                user=request.user,
+                subscription=subscription,
+                payment_method=payment_method,
+                total_amount=total_amount,
+                transaction_uuid=transaction_uuid,
+                payment_idx=payment_idx,
+                package_type=package_type
+            )
 
             return Response(
                 {

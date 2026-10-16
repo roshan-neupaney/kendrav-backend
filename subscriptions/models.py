@@ -10,12 +10,15 @@ TemplateTypeChoices = [
     ("basic", "Basic"),
     ("full", "Full"),
 ]
+DurationTypeChoices = [
+    ("monthly", "Monthly"),
+    ("yearly", "Yearly"),
+]
 
 
 class Subscription(models.Model):
     plan_name = models.CharField(max_length=100)
     plan_type = models.CharField(max_length=50, choices=SubscriptionsTypeChoices)
-    max_channels = models.IntegerField()
     queue_limit = models.IntegerField()
     allow_analytics = models.BooleanField(default=False)
     allow_team = models.BooleanField(default=False)
@@ -40,6 +43,7 @@ class Subscription(models.Model):
 
 class DurationPackage(models.Model):
     subscription = models.ForeignKey(Subscription, on_delete=models.CASCADE, related_name="duration_packages")
+    type = models.CharField(max_length=25, choices=DurationTypeChoices)
     price = models.DecimalField(max_digits=10, decimal_places=2)
     duration_days = models.IntegerField()
     is_active = models.BooleanField(default=True)

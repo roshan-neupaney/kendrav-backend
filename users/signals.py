@@ -72,4 +72,4 @@ def create_user_profile(sender, instance, created, **kwargs):
 
         free_plan = Subscription.objects.filter(plan_type="free").first()
         if free_plan:
-            UserSubscription.objects.create(user=instance, subscription=free_plan)
+            UserSubscription.objects.create(user=instance, subscription=free_plan, channel_count=2)
