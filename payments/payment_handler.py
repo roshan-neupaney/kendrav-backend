@@ -96,31 +96,32 @@ class KhaltiHandler:
                 payment_transaction.gateway_response = res_json
                 payment_transaction.save()
 
-                if payment_transaction.status == "COMPLETED":
-                    user = User.objects.filter(id=payment_transaction.user).first()
-                    subscription = Subscription.objects.filter(
-                        id=payment_transaction.subscription
-                    ).first()
-                    UserSubscription.objects.filter(user=user, is_active=True).update(
-                        is_active=False
-                    )
+                # if payment_transaction.status == "COMPLETED":
+                #     user = User.objects.filter(id=payment_transaction.user).first()
+                #     subscription = Subscription.objects.filter(
+                #         id=payment_transaction.subscription
+                #     ).first()
+                #     UserSubscription.objects.filter(user=user, is_active=True).update(
+                #         is_active=False
+                #     )
 
-                    start_date = datetime.now(timezone.utc)
-                    end_date = datetime.now(timezone.utc) + timedelta(
-                        days=subscription.duration_days
-                    )
+                #     start_date = datetime.now(timezone.utc)
+                #     end_date = datetime.now(timezone.utc) + timedelta(
+                #         days=subscription.duration_days
+                #     )
 
-                    UserSubscription.objects.create(
-                        user=user,
-                        subscription=subscription,
-                        start_date=start_date,
-                        end_date=end_date,
-                        payment_transaction=payment_transaction,
-                    )
+                #     UserSubscription.objects.create(
+                #         user=user,
+                #         subscription=subscription,
+                #         start_date=start_date,
+                #         end_date=end_date,
+                #         payment_transaction=payment_transaction,
+                #     )
 
-                return {"status": True, "data": payment_transaction}
-            else:
-                return {"status": False, "data": payment_transaction}
+                return {"status": True, "data": {
+                    "status": status.get(res_json.get("status")),
+                    "data": res_json
+                }}
 
         except Exception as e:
             logger.error(f"Failed to verify payment: {e}")

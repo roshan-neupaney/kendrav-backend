@@ -64,11 +64,13 @@ class PaymentInitializeView(APIView):
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
-            duration_package = subscription.duration_packages.filter(type=package_type).first()
+            duration_package = subscription.duration_packages.filter(
+                type=package_type
+            ).first()
             print(duration_package)
 
             cache.set(f"idempotency_{transaction_uuid}", True, timeout=86400)
-            
+
             total_amount = duration_package.price * channel_count
 
             payload = {
@@ -113,7 +115,7 @@ class PaymentInitializeView(APIView):
                 total_amount=total_amount,
                 transaction_uuid=transaction_uuid,
                 payment_idx=payment_idx,
-                package_type=package_type
+                package_type=package_type,
             )
 
             return Response(
@@ -170,6 +172,16 @@ class PaymentVerificationView(APIView):
         handler = payment_handler(payment_transaction.payment_method.gateway_type)
 
         result = handler.verify_payment(pidx=pidx)
+
+        if not result:
+            return Response(
+                {
+                    "message": "Failed to verify payment",
+                    "status": status.HTTP_500_INTERNAL_SERVER_ERROR,
+                }
+            )
+        
+        
 
         serializer = PaymentTransactionSerializer(result.get("data"))
 
