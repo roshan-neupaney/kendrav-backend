@@ -34,6 +34,7 @@ class Subscription(models.Model):
     max_ai_generative_ideas = models.IntegerField(default=0)
     max_workspaces = models.IntegerField(default=1)
     is_active = models.BooleanField(default=True)
+    order = models.IntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
