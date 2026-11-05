@@ -18,7 +18,7 @@ class PaymentInitializeView(APIView):
         if serializer.is_valid(raise_exception=True):
             payment_method_id = serializer.validated_data.get("payment_method_id")
             channel_count = serializer.validated_data.get("channel_count")
-            package_type = serializer.validated_data.get("package_type")
+            duration_package_id = serializer.validated_data.get("duration_package")
             transaction_uuid = serializer.validated_data.get("transaction_uuid")
             idempotency_key = cache.get(f"idempotency_{transaction_uuid}", False)
 
@@ -53,7 +53,7 @@ class PaymentInitializeView(APIView):
 
             duration_package = (
                 DurationPackage.objects.select_related("subscription")
-                .filter(id=package_type)
+                .filter(id=duration_package_id)
                 .first()
             )
 
@@ -70,48 +70,48 @@ class PaymentInitializeView(APIView):
 
             cache.set(f"idempotency_{transaction_uuid}", True, timeout=86400)
 
-            current_subscription = UserSubscription.objects.filter(
-                user=request.user, is_active=True
-            ).first()
+            # current_subscription = UserSubscription.objects.filter(
+            #     user=request.user, is_active=True
+            # ).first()
 
-            if current_subscription.subscription.plan_type != "free":
-                is_upgrading = (
-                    current_subscription.subscription.order < subscription.order
-                )
-                is_downgrading = (
-                    current_subscription.subscription.order > subscription.order
-                )
+            # if current_subscription.subscription.plan_type != "free":
+            #     is_upgrading = (
+            #         current_subscription.subscription.order < subscription.order
+            #     )
+            #     is_downgrading = (
+            #         current_subscription.subscription.order > subscription.order
+            #     )
 
-                current_duration_package = DurationPackage.objects.filter(
-                    subscription=current_subscription.subscription, is_active=True
-                ).first()
+            #     current_duration_package = DurationPackage.objects.filter(
+            #         subscription=current_subscription.subscription, is_active=True
+            #     ).first()
 
-                if not current_duration_package:
-                    return Response(
-                        {
-                            "status": status.HTTP_400_BAD_REQUEST,
-                            "message": "Current duration package not found",
-                        },
-                        status=status.HTTP_400_BAD_REQUEST,
-                    )
+            #     if not current_duration_package:
+            #         return Response(
+            #             {
+            #                 "status": status.HTTP_400_BAD_REQUEST,
+            #                 "message": "Current duration package not found",
+            #             },
+            #             status=status.HTTP_400_BAD_REQUEST,
+            #         )
 
-                remaining_days = (
-                    (
-                        current_subscription.start_date
-                        + timedelta(days=current_duration_package.duration_days)
-                    )
-                    - datetime.now(timezone.utc)
-                ).days
+            #     remaining_days = (
+            #         (
+            #             current_subscription.start_date
+            #             + timedelta(days=current_duration_package.duration_days)
+            #         )
+            #         - datetime.now(timezone.utc)
+            #     ).days
 
-                if is_upgrading and remaining_days > 0:
-                    current_value_per_day = (
-                        current_duration_package.price
-                        * current_subscription.channel_count
-                    ) / remaining_days
+            #     if is_upgrading and remaining_days > 0:
+            #         current_value_per_day = (
+            #             current_duration_package.price
+            #             * current_subscription.channel_count
+            #         ) / remaining_days
 
-                    addable_days = (
-                        duration_package.duration_days * current_value_per_day
-                    ) / (duration_package.price * channel_count)
+            #         addable_days = (
+            #             duration_package.duration_days * current_value_per_day
+            #         ) / (duration_package.price * channel_count)
 
             total_amount = duration_package.price * channel_count
 
@@ -157,7 +157,7 @@ class PaymentInitializeView(APIView):
                 total_amount=total_amount,
                 transaction_uuid=transaction_uuid,
                 payment_idx=payment_idx,
-                package_type=package_type,
+                duration_package=duration_package,
             )
 
             return Response(
@@ -189,6 +189,7 @@ class PaymentVerificationView(APIView):
 
         payment_transaction = (
             PaymentTransaction.objects.select_related("payment_method")
+            .prefetch_related("transaction_subscription")
             .filter(payment_idx=pidx)
             .first()
         )
@@ -224,62 +225,68 @@ class PaymentVerificationView(APIView):
             )
 
         result_data = result.get("data")
-        status = result_data.get("status")
+        result_status = result_data.get("status")
         data = result_data.get("data")
 
-        payment_transaction.status = status
+        payment_transaction.status = result_status
         payment_transaction.gateway_response = data
         payment_transaction.save()
 
-        subscription = Subscription.objects.filter(
-            id=payment_transaction.subscription, is_active=True
-        )
-
-        current_subscription = UserSubscription.objects.filter(
-            user=request.user, is_active=True
-        ).first()
-
-        duration_package = (
-                        DurationPackage.objects.select_related("subscription")
-                        .filter(id=package_type)
-                        .first()
-                    )
-
-        if current_subscription.subscription.plan_type != "free":
-            is_upgrading = current_subscription.subscription.order < subscription.order
-            is_downgrading = (
-                current_subscription.subscription.order > subscription.order
+        if payment_transaction.status == "COMPLETED":
+            subscription = Subscription.objects.filter(
+                id=payment_transaction.subscription, is_active=True
             )
 
-            current_duration_package = DurationPackage.objects.filter(
-                subscription=current_subscription.subscription, is_active=True
+            current_subscription = UserSubscription.objects.filter(
+                user=request.user, is_active=True
             ).first()
 
-            if not current_duration_package:
-                return Response(
-                    {
-                        "status": status.HTTP_400_BAD_REQUEST,
-                        "message": "Current duration package not found",
-                    },
-                    status=status.HTTP_400_BAD_REQUEST,
+            duration_package = (
+                DurationPackage.objects.select_related("subscription")
+                .filter(id=payment_transaction.duration_package)
+                .first()
+            )
+
+            channel_count = payment_transaction.transaction_subscription.channel_count
+
+            if current_subscription.subscription.plan_type != "free":
+                is_upgrading = (
+                    current_subscription.subscription.order < subscription.order
+                )
+                is_downgrading = (
+                    current_subscription.subscription.order > subscription.order
                 )
 
-            remaining_days = (
-                (
-                    current_subscription.start_date
-                    + timedelta(days=current_duration_package.duration_days)
-                )
-                - datetime.now(timezone.utc)
-            ).days
+                current_duration_package = DurationPackage.objects.filter(
+                    subscription=current_subscription.subscription, is_active=True
+                ).first()
 
-            if is_upgrading and remaining_days > 0:
-                current_value_per_day = (
-                    current_duration_package.price * current_subscription.channel_count
-                ) / remaining_days
+                if not current_duration_package:
+                    return Response(
+                        {
+                            "status": status.HTTP_400_BAD_REQUEST,
+                            "message": "Current duration package not found",
+                        },
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
 
-                addable_days = (
-                    duration_package.duration_days * current_value_per_day
-                ) / (duration_package.price * channel_count)
+                remaining_days = (
+                    (
+                        current_subscription.start_date
+                        + timedelta(days=current_duration_package.duration_days)
+                    )
+                    - datetime.now(timezone.utc)
+                ).days
+
+                if is_upgrading and remaining_days > 0:
+                    current_value_per_day = (
+                        current_duration_package.price
+                        * current_subscription.channel_count
+                    ) / remaining_days
+
+                    addable_days = (
+                        duration_package.duration_days * current_value_per_day
+                    ) / (duration_package.price * channel_count)
 
         serializer = PaymentTransactionSerializer(result.get("data"))
 
